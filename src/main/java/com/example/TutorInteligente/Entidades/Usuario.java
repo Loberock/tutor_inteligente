@@ -1,5 +1,10 @@
 package com.example.TutorInteligente.Entidades;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "usuario")
@@ -11,7 +16,9 @@ public class Usuario {
 
     private String correo;
 
-    private String contraseña;
+    private String contrasena;
+
+    private String rol;
 
     private Boolean estado;
 
@@ -34,12 +41,20 @@ public class Usuario {
         this.correo = correo;
     }
 
-    public String getContraseña() {
-        return contraseña;
+    public String getContrasena() {
+        return contrasena;
     }
 
-    public void setContraseña(String contraseña) {
-        this.contraseña = contraseña;
+    public void setContrasena(String contrasena) {
+        this.contrasena = contrasena;
+    }
+
+    public String getRol() {
+        return rol;
+    }
+
+    public void setRol(String rol) {
+        this.rol = rol;
     }
 
     public Boolean getEstado() {

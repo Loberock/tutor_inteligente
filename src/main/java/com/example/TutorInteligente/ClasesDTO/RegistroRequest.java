@@ -8,7 +8,7 @@ public class RegistroRequest {
 
     private String correo;
 
-    private String contraseña;
+    private String contrasena;
 
     private String tipo; // ALUMNO o PROFESOR
 
@@ -39,12 +39,12 @@ public class RegistroRequest {
         this.correo = correo;
     }
 
-    public String getContraseña() {
-        return contraseña;
+    public String getContrasena() {
+        return contrasena;
     }
 
-    public void setContraseña(String contraseña) {
-        this.contraseña = contraseña;
+    public void setContrasena(String contrasena) {
+        this.contrasena = contrasena;
     }
 
     public String getTipo() {
@@ -62,5 +62,4 @@ public class RegistroRequest {
     public void setGrado(String grado) {
         this.grado = grado;
     }
-
 }

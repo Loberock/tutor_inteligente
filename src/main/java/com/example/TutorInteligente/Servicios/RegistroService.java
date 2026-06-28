@@ -2,9 +2,18 @@ package com.example.TutorInteligente.Servicios;
 
 import com.example.TutorInteligente.ClasesDTO.RegistroRequest;
 import com.example.TutorInteligente.ClasesDTO.RegistroResponse;
-import com.example.TutorInteligente.Entidades.*;
-import com.example.TutorInteligente.Repositorios.*;
+import com.example.TutorInteligente.Entidades.Alumno;
+import com.example.TutorInteligente.Entidades.AlumnoCurso;
+import com.example.TutorInteligente.Entidades.Curso;
+import com.example.TutorInteligente.Entidades.Profesor;
+import com.example.TutorInteligente.Entidades.Usuario;
+import com.example.TutorInteligente.Repositorios.AlumnoCursoRepository;
+import com.example.TutorInteligente.Repositorios.AlumnoRepository;
+import com.example.TutorInteligente.Repositorios.CursoRepository;
+import com.example.TutorInteligente.Repositorios.ProfesorRepository;
+import com.example.TutorInteligente.Repositorios.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,130 +38,63 @@ public class RegistroService {
     @Autowired
     private AlumnoCursoRepository alumnoCursoRepo;
 
-    public RegistroResponse registrar(
-            RegistroRequest dto
-    ) {
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
-        if (usuarioRepo.existsByCorreo(
-                dto.getCorreo()
-        )) {
+    public RegistroResponse registrar(RegistroRequest dto) {
 
-            throw new RuntimeException(
-                    "Correo ya registrado"
-            );
-
+        if (usuarioRepo.existsByCorreo(dto.getCorreo())) {
+            throw new RuntimeException("Correo ya registrado");
         }
 
+        String tipo = dto.getTipo() == null ? "" : dto.getTipo().trim().toUpperCase();
+
+        if (!"ALUMNO".equals(tipo) && !"PROFESOR".equals(tipo)) {
+            throw new RuntimeException("Tipo de usuario no valido");
+        }
 
         Usuario usuario = new Usuario();
-
-        usuario.setCorreo(
-                dto.getCorreo()
-        );
-
-        usuario.setContraseña(
-                dto.getContraseña()
-        );
-
+        usuario.setCorreo(dto.getCorreo());
+        usuario.setContrasena(passwordEncoder.encode(dto.getContrasena()));
+        usuario.setRol(tipo);
         usuario.setEstado(true);
+        usuario = usuarioRepo.save(usuario);
 
-        usuario =
-                usuarioRepo.save(usuario);
-
-
-        RegistroResponse response =
-                new RegistroResponse();
-
+        RegistroResponse response = new RegistroResponse();
         response.setCreado(true);
 
-
-        if ("ALUMNO".equalsIgnoreCase(
-                dto.getTipo()
-        )) {
-
-            Alumno alumno =
-                    new Alumno();
-
-            alumno.setNombre(
-                    dto.getNombre()
-            );
-
-            alumno.setApellido(
-                    dto.getApellido()
-            );
-
-            alumno.setGrado(
-                    dto.getGrado()
-            );
-
-            alumno.setUsuario(
-                    usuario
-            );
-
+        if ("ALUMNO".equals(tipo)) {
+            Alumno alumno = new Alumno();
+            alumno.setNombre(dto.getNombre());
+            alumno.setApellido(dto.getApellido());
+            alumno.setGrado(dto.getGrado());
+            alumno.setUsuario(usuario);
             alumno = alumnoRepo.save(alumno);
 
-            // 1. obtener todos los cursos
             List<Curso> cursos = cursoRepo.findAll();
 
-            // 2. crear relación alumno-curso para cada uno
             for (Curso curso : cursos) {
-
                 AlumnoCurso ac = new AlumnoCurso();
-
                 ac.setAlumno(alumno);
-
                 ac.setCurso(curso);
-
                 ac.setNivel("BASICO");
-
                 alumnoCursoRepo.save(ac);
             }
 
-
-            response.setTipo(
-                    "ALUMNO"
-            );
-
-            response.setAlumno(
-                    alumno
-            );
-
+            response.setTipo("ALUMNO");
+            response.setAlumno(alumno);
+            return response;
         }
 
-        else {
+        Profesor profesor = new Profesor();
+        profesor.setNombre(dto.getNombre());
+        profesor.setApellido(dto.getApellido());
+        profesor.setUsuario(usuario);
+        profesor = profesorRepo.save(profesor);
 
-            Profesor profesor =
-                    new Profesor();
-
-            profesor.setNombre(
-                    dto.getNombre()
-            );
-
-            profesor.setApellido(
-                    dto.getApellido()
-            );
-
-            profesor.setUsuario(
-                    usuario
-            );
-
-            profesor =
-                    profesorRepo.save(
-                            profesor
-                    );
-
-            response.setTipo(
-                    "PROFESOR"
-            );
-
-            response.setProfesor(
-                    profesor
-            );
-
-        }
+        response.setTipo("PROFESOR");
+        response.setProfesor(profesor);
 
         return response;
-
     }
-
 }
