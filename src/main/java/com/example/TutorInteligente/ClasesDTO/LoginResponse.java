@@ -13,5 +13,7 @@ public class LoginResponse {
 
     private Integer usuarioId;
 
+    private Integer perfilId;
+
     private String nombre;
 }

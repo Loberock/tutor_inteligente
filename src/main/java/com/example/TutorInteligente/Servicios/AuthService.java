@@ -46,9 +46,22 @@ public class AuthService {
         response.setToken(jwtService.generarToken(usuario));
         response.setTipo(usuario.getRol());
         response.setUsuarioId(usuario.getUsuarioId());
+        response.setPerfilId(obtenerPerfilId(usuario));
         response.setNombre(obtenerNombre(usuario));
 
         return response;
+    }
+
+    private Integer obtenerPerfilId(Usuario usuario) {
+        if ("ALUMNO".equalsIgnoreCase(usuario.getRol())) {
+            return alumnoRepo.findByUsuario_UsuarioId(usuario.getUsuarioId())
+                    .map(Alumno::getAlumnoId)
+                    .orElse(null);
+        }
+
+        return profesorRepo.findByUsuario_UsuarioId(usuario.getUsuarioId())
+                .map(Profesor::getProfesorId)
+                .orElse(null);
     }
 
     private String obtenerNombre(Usuario usuario) {
