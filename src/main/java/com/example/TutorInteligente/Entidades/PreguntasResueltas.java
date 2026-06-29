@@ -1,8 +1,21 @@
 package com.example.TutorInteligente.Entidades;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDate;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "preguntas_resueltas")
 public class PreguntasResueltas {
@@ -24,55 +37,4 @@ public class PreguntasResueltas {
     private Boolean correcta;
 
     private LocalDate fecha;
-
-    public PreguntasResueltas() {
-    }
-
-    public Integer getPreguntaResueltaId() {
-        return preguntaResueltaId;
-    }
-
-    public void setPreguntaResueltaId(Integer preguntaResueltaId) {
-        this.preguntaResueltaId = preguntaResueltaId;
-    }
-
-    public Alumno getAlumno() {
-        return alumno;
-    }
-
-    public void setAlumno(Alumno alumno) {
-        this.alumno = alumno;
-    }
-
-    public Pregunta getPregunta() {
-        return pregunta;
-    }
-
-    public void setPregunta(Pregunta pregunta) {
-        this.pregunta = pregunta;
-    }
-
-    public String getRespuestaSeleccionada() {
-        return respuestaSeleccionada;
-    }
-
-    public void setRespuestaSeleccionada(String respuestaSeleccionada) {
-        this.respuestaSeleccionada = respuestaSeleccionada;
-    }
-
-    public Boolean getCorrecta() {
-        return correcta;
-    }
-
-    public void setCorrecta(Boolean correcta) {
-        this.correcta = correcta;
-    }
-
-    public LocalDate getFecha() {
-        return fecha;
-    }
-
-    public void setFecha(LocalDate fecha) {
-        this.fecha = fecha;
-    }
 }

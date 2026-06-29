@@ -1,6 +1,19 @@
 package com.example.TutorInteligente.Entidades;
-import jakarta.persistence.*;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "profesor")
 public class Profesor {
@@ -16,39 +29,4 @@ public class Profesor {
     @OneToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
-
-    public Profesor() {
-    }
-
-    public Integer getProfesorId() {
-        return profesorId;
-    }
-
-    public void setProfesorId(Integer profesorId) {
-        this.profesorId = profesorId;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public String getApellido() {
-        return apellido;
-    }
-
-    public void setApellido(String apellido) {
-        this.apellido = apellido;
-    }
-
-    public Usuario getUsuario() {
-        return usuario;
-    }
-
-    public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
-    }
 }

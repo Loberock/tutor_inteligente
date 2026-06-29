@@ -47,7 +47,9 @@ public class RegistroService {
             throw new RuntimeException("Correo ya registrado");
         }
 
-        String tipo = dto.getTipo() == null ? "" : dto.getTipo().trim().toUpperCase();
+        String tipo = dto.getTipo() == null || dto.getTipo().isBlank()
+                ? "ALUMNO"
+                : dto.getTipo().trim().toUpperCase();
 
         if (!"ALUMNO".equals(tipo) && !"PROFESOR".equals(tipo)) {
             throw new RuntimeException("Tipo de usuario no valido");

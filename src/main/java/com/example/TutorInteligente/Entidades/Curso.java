@@ -1,7 +1,17 @@
 package com.example.TutorInteligente.Entidades;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "curso")
 public class Curso {
@@ -11,23 +21,4 @@ public class Curso {
     private Integer cursoId;
 
     private String nombreCurso;
-
-    public Curso() {
-    }
-
-    public Integer getCursoId() {
-        return cursoId;
-    }
-
-    public void setCursoId(Integer cursoId) {
-        this.cursoId = cursoId;
-    }
-
-    public String getNombreCurso() {
-        return nombreCurso;
-    }
-
-    public void setNombreCurso(String nombreCurso) {
-        this.nombreCurso = nombreCurso;
-    }
 }

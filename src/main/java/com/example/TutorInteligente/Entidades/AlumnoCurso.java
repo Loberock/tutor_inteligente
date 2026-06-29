@@ -1,9 +1,21 @@
 package com.example.TutorInteligente.Entidades;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
-    @Table(name="alumno_curso")
+@Table(name = "alumno_curso")
 public class AlumnoCurso {
 
     @Id
@@ -11,45 +23,12 @@ public class AlumnoCurso {
     private Integer alumnoCursoId;
 
     @ManyToOne
-    @JoinColumn(name="alumno_id")
+    @JoinColumn(name = "alumno_id")
     private Alumno alumno;
 
     @ManyToOne
-    @JoinColumn(name="curso_id")
+    @JoinColumn(name = "curso_id")
     private Curso curso;
 
     private String nivel;
-
-    public Integer getAlumnoCursoId() {
-        return alumnoCursoId;
-    }
-
-    public void setAlumnoCursoId(Integer alumnoCursoId) {
-        this.alumnoCursoId = alumnoCursoId;
-    }
-
-    public Alumno getAlumno() {
-        return alumno;
-    }
-
-    public void setAlumno(Alumno alumno) {
-        this.alumno = alumno;
-    }
-
-    public Curso getCurso() {
-        return curso;
-    }
-
-    public void setCurso(Curso curso) {
-        this.curso = curso;
-    }
-
-    public String getNivel() {
-        return nivel;
-    }
-
-    public void setNivel(String nivel) {
-        this.nivel = nivel;
-    }
-
 }

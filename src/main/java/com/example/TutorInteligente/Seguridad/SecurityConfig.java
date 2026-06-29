@@ -2,7 +2,6 @@ package com.example.TutorInteligente.Seguridad;
 
 import com.example.TutorInteligente.Entidades.Usuario;
 import com.example.TutorInteligente.Repositorios.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,13 +26,11 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            AuthenticationProvider authenticationProvider
+            AuthenticationProvider authenticationProvider,
+            JwtAuthenticationFilter jwtAuthenticationFilter
     ) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
