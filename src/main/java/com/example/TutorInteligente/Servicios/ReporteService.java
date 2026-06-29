@@ -25,110 +25,81 @@ public class ReporteService {
     @Autowired
     private PreguntasResueltasRepository prRepo;
 
-
-    public List<AlumnoRendimientoDTO> obtenerRendimiento() {
-
-        List<Alumno> alumnos = alumnoRepo.findAll();
+    public List<AlumnoRendimientoDTO> obtenerRendimiento(
+            Integer alumnoId,
+            Integer cursoId,
+            String grado,
+            Boolean soloRefuerzo
+    ) {
+        List<Alumno> alumnos = alumnoId == null
+                ? alumnoRepo.findAll()
+                : alumnoRepo.findById(alumnoId)
+                        .map(List::of)
+                        .orElseThrow(() -> new RuntimeException("Alumno no encontrado"));
 
         List<AlumnoRendimientoDTO> resultado = new ArrayList<>();
 
         for (Alumno alumno : alumnos) {
+            if (grado != null && !grado.isBlank() && !alumno.getGrado().equalsIgnoreCase(grado.trim())) {
+                continue;
+            }
 
-            // =========================
-            // 1. OBTENER CURSOS
-            // =========================
-            List<AlumnoCurso> cursos =
-                    alumnoCursoRepo.findByAlumno_AlumnoId(
-                            alumno.getAlumnoId()
-                    );
+            List<AlumnoCurso> cursos = alumnoCursoRepo.findByAlumno_AlumnoId(alumno.getAlumnoId());
 
-            if (cursos.isEmpty()) continue;
-
-            // =========================
-            // 2. ESCOGER PEOR CURSO
-            // =========================
-            AlumnoCurso peorCurso = null;
-            int peorValor = Integer.MAX_VALUE;
-
-            for (AlumnoCurso ac : cursos) {
-
-                int valor = valorNivel(ac.getNivel());
-
-                if (valor < peorValor) {
-                    peorValor = valor;
-                    peorCurso = ac;
+            for (AlumnoCurso alumnoCurso : cursos) {
+                if (cursoId != null && !alumnoCurso.getCurso().getCursoId().equals(cursoId)) {
+                    continue;
                 }
+
+                List<PreguntasResueltas> respuestas =
+                        prRepo.findByAlumno_AlumnoIdAndPregunta_Curso_CursoId(
+                                alumno.getAlumnoId(),
+                                alumnoCurso.getCurso().getCursoId()
+                        );
+
+                if (respuestas.isEmpty()) {
+                    continue;
+                }
+
+                long total = respuestas.size();
+                long correctas = respuestas.stream()
+                        .filter(PreguntasResueltas::getCorrecta)
+                        .count();
+
+                double porcentaje = (correctas * 100.0) / total;
+                String estado = estadoPorPorcentaje(porcentaje);
+
+                if (Boolean.TRUE.equals(soloRefuerzo) && !"NECESITA REFUERZO".equals(estado)) {
+                    continue;
+                }
+
+                resultado.add(new AlumnoRendimientoDTO(
+                        alumno.getAlumnoId(),
+                        alumno.getNombre() + " " + alumno.getApellido(),
+                        alumno.getGrado(),
+                        alumnoCurso.getCurso().getCursoId(),
+                        alumnoCurso.getCurso().getNombreCurso(),
+                        alumnoCurso.getNivel(),
+                        total,
+                        correctas,
+                        porcentaje,
+                        estado
+                ));
             }
-
-            Integer cursoId = peorCurso.getCurso().getCursoId();
-
-            // =========================
-            // 3. OBTENER RESPUESTAS
-            // =========================
-            List<PreguntasResueltas> respuestas =
-                    prRepo.findByAlumno_AlumnoIdAndPregunta_Curso_CursoId(
-                            alumno.getAlumnoId(),
-                            cursoId
-                    );
-
-            System.out.println("antes del continues"+alumno.getNombre());
-            if (respuestas.isEmpty()) continue;
-            System.out.println("Despues del continues");
-            long total = respuestas.size();
-
-            long correctas = respuestas.stream()
-                    .filter(PreguntasResueltas::getCorrecta)
-                    .count();
-
-            double porcentaje = (correctas * 100.0) / total;
-
-            System.out.println(porcentaje);
-            // =========================
-            // 4. ESTADO SEGÚN PORCENTAJE
-            // =========================
-            String estado;
-
-            if (porcentaje <= 50) {
-                estado = "NECESITA REFUERZO";
-            } else if (porcentaje <= 75) {
-                estado = "EN PROCESO";
-            } else {
-                estado = "AVANZA BIEN";
-            }
-
-            // =========================
-            // 5. RESPONSE
-            // =========================
-            AlumnoRendimientoDTO dto = new AlumnoRendimientoDTO();
-
-            dto.setNombreCompleto(
-                    alumno.getNombre() + " " + alumno.getApellido()
-            );
-
-            dto.setGrado(alumno.getGrado());
-
-            dto.setCursoNombre(
-                    peorCurso.getCurso().getNombreCurso()
-            );
-
-            dto.setPorcentaje(porcentaje);
-
-            dto.setEstado(estado);
-
-            resultado.add(dto);
         }
 
         return resultado;
     }
 
-
-    private int valorNivel(String nivel) {
-
-        switch (nivel.toUpperCase()) {
-            case "BASICO": return 1;
-            case "INTERMEDIO": return 2;
-            case "AVANZADO": return 3;
-            default: return 0;
+    private String estadoPorPorcentaje(double porcentaje) {
+        if (porcentaje <= 50) {
+            return "NECESITA REFUERZO";
         }
+
+        if (porcentaje <= 75) {
+            return "EN PROCESO";
+        }
+
+        return "AVANZA BIEN";
     }
 }
