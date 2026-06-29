@@ -37,6 +37,13 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml"
+                        ).permitAll()
                         .requestMatchers("/v1/usuarios", "/v1/sesiones").permitAll()
                         .requestMatchers(HttpMethod.GET, "/v1/cursos/**").authenticated()
                         .requestMatchers("/v1/cursos/**").hasRole("PROFESOR")
