@@ -4,6 +4,7 @@ import com.example.TutorInteligente.Entidades.Usuario;
 import com.example.TutorInteligente.Repositorios.UsuarioRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -37,6 +38,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v1/usuarios", "/v1/sesiones").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/cursos/**").authenticated()
+                        .requestMatchers("/v1/cursos/**").hasRole("PROFESOR")
                         .requestMatchers("/v1/preguntas/**", "/v1/reportes/**").hasRole("PROFESOR")
                         .requestMatchers("/v1/evaluaciones/**", "/v1/alumnos-cursos/**").hasRole("ALUMNO")
                         .anyRequest().authenticated()
