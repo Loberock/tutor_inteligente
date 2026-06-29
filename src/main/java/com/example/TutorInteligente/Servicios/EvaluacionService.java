@@ -97,30 +97,51 @@ public class EvaluacionService {
             prRepo.save(pr);
         }
 
-        for (CursoNivelDTO c : dto.getCursos()) {
-            AlumnoCurso ac = alumnoCursoRepo
-                    .findByAlumno_AlumnoIdAndCurso_CursoId(
-                            alumno.getAlumnoId(),
-                            c.getCursoId()
-                    )
-                    .orElseThrow(() ->
-                            new RuntimeException("Relacion alumno-curso no encontrada")
-                    );
-
-            ac.setNivel(c.getNivel().trim().toUpperCase());
-            alumnoCursoRepo.save(ac);
-        }
-
         int total = dto.getRespuestas().size();
         double porcentaje = total == 0 ? 0.0 : (correctas * 100.0) / total;
+        String nivelAsignado = nivelPorPorcentaje(porcentaje);
+
+        for (CursoNivelDTO c : dto.getCursos()) {
+            AlumnoCurso ac = obtenerRelacionAlumnoCurso(alumno, c.getCursoId());
+            ac.setNivel(nivelAsignado);
+            alumnoCursoRepo.save(ac);
+        }
 
         return new EvaluacionResultadoResponse(
                 "EVALUACION REGISTRADA CORRECTAMENTE",
                 total,
                 correctas,
                 porcentaje,
+                nivelAsignado,
                 refuerzos
         );
+    }
+
+    private AlumnoCurso obtenerRelacionAlumnoCurso(Alumno alumno, Integer cursoId) {
+        return alumnoCursoRepo
+                .findByAlumno_AlumnoIdAndCurso_CursoId(alumno.getAlumnoId(), cursoId)
+                .orElseGet(() -> {
+                    Curso curso = cursoRepo.findById(cursoId)
+                            .orElseThrow(() -> new RuntimeException("Curso no encontrado"));
+
+                    AlumnoCurso alumnoCurso = new AlumnoCurso();
+                    alumnoCurso.setAlumno(alumno);
+                    alumnoCurso.setCurso(curso);
+                    alumnoCurso.setNivel("BASICO");
+                    return alumnoCurso;
+                });
+    }
+
+    private String nivelPorPorcentaje(double porcentaje) {
+        if (porcentaje <= 50) {
+            return "BASICO";
+        }
+
+        if (porcentaje <= 75) {
+            return "INTERMEDIO";
+        }
+
+        return "AVANZADO";
     }
 
     private String dificultadPorNivel(String nivel) {

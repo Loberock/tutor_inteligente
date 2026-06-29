@@ -524,6 +524,13 @@ select:focus {
   margin-top: 12px;
 }
 
+.exercise-list,
+.evaluation-flow {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
 .list.compact {
   max-height: 260px;
   overflow: auto;
@@ -654,9 +661,28 @@ select:focus {
   padding: 22px;
 }
 
+.evaluation-flow .exercise-card {
+  margin-top: 0;
+}
+
 .exercise-topline {
   justify-content: space-between;
   gap: 12px;
+}
+
+.progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #e5e5e5;
+  overflow: hidden;
+}
+
+.progress-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--teal);
+  transition: width 0.2s ease;
 }
 
 .exercise-card h2 {
@@ -702,6 +728,10 @@ select:focus {
 .answer.active span {
   color: #ffffff;
   background: var(--teal);
+}
+
+.answer:disabled {
+  cursor: default;
 }
 
 .progress-block {
@@ -761,7 +791,7 @@ select:focus {
 
 .result-box {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 12px;
   padding: 14px;
@@ -779,12 +809,44 @@ select:focus {
 .support-list {
   grid-column: 1 / -1;
   display: grid;
-  gap: 6px;
+  gap: 8px;
+}
+
+.support-list article {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid rgba(18, 132, 123, 0.18);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.support-list strong {
+  color: var(--text);
 }
 
 .support-list p {
   margin: 0;
   color: var(--text);
+}
+
+.summary-note {
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(18, 132, 123, 0.18);
+  border-radius: 8px;
+  background: #e6f7ed;
+}
+
+.summary-note strong {
+  color: var(--text);
+}
+
+.summary-note span {
+  color: var(--teal);
+  font-weight: 850;
 }
 
 .status {

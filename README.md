@@ -204,7 +204,7 @@ POST /v1/evaluaciones
 }
 ```
 
-La respuesta incluye total, correctas, porcentaje y refuerzos si el alumno fallo preguntas.
+La respuesta incluye total, correctas, porcentaje, nivel asignado por reglas y refuerzos si el alumno fallo preguntas.
 
 ### Reportes
 

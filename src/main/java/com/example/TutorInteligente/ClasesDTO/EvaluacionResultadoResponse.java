@@ -17,5 +17,7 @@ public class EvaluacionResultadoResponse {
 
     private Double porcentaje;
 
+    private String nivelAsignado;
+
     private List<RefuerzoResponse> refuerzos;
 }

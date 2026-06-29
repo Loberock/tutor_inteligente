@@ -328,11 +328,19 @@ function TeacherDashboard({ session }) {
 }
 
 function StudentDashboard({ session }) {
+  const [summary, setSummary] = useState({
+    answered: 0,
+    total: 0,
+    progress: 0,
+    result: null,
+    currentLevel: "BASICO",
+  });
+
   return (
     <div className="student-layout">
       <StudentProfilePanel session={session} />
-      <StudentEvaluationPanel session={session} />
-      <StudentSummary session={session} />
+      <StudentEvaluationPanel session={session} onSummaryChange={setSummary} />
+      <StudentSummary session={session} summary={summary} />
     </div>
   );
 }
@@ -604,7 +612,7 @@ function StudentProfilePanel({ session }) {
   );
 }
 
-function StudentEvaluationPanel({ session }) {
+function StudentEvaluationPanel({ session, onSummaryChange }) {
   const [courses, setCourses] = useState([]);
   const [config, setConfig] = useState({
     cursoId: "",
@@ -616,6 +624,13 @@ function StudentEvaluationPanel({ session }) {
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState({ type: "", message: "" });
+  const answeredCount = Object.values(answers).filter(Boolean).length;
+  const progress = result
+    ? Math.round(result.porcentaje)
+    : exercises.length
+      ? Math.round((answeredCount / exercises.length) * 100)
+      : 0;
+  const canSubmit = exercises.length > 0 && answeredCount === exercises.length && !result;
 
   useEffect(() => {
     apiRequest("/v1/cursos", { token: session.token })
@@ -623,8 +638,15 @@ function StudentEvaluationPanel({ session }) {
       .catch(() => {});
   }, [session.token]);
 
-  const currentExercise = exercises[0];
-  const progress = result ? result.porcentaje : exercises.length ? Math.round((Object.keys(answers).length / exercises.length) * 100) : 0;
+  useEffect(() => {
+    onSummaryChange({
+      answered: answeredCount,
+      total: exercises.length,
+      progress,
+      result,
+      currentLevel: result?.nivelAsignado || config.nivel,
+    });
+  }, [answeredCount, config.nivel, exercises.length, onSummaryChange, progress, result]);
 
   const loadDiagnostic = async () => {
     try {
@@ -633,10 +655,15 @@ function StudentEvaluationPanel({ session }) {
         return;
       }
       const query = `cursoId=${config.cursoId}&grado=${config.grado}&nivel=${config.nivel}&cantidad=${config.cantidad}`;
-      setExercises(await apiRequest(`/v1/evaluaciones/diagnostico?${query}`, { token: session.token }));
+      const data = await apiRequest(`/v1/evaluaciones/diagnostico?${query}`, { token: session.token });
+      setExercises(data);
       setAnswers({});
       setResult(null);
-      setStatus({ type: "", message: "" });
+      setStatus(
+        data.length
+          ? { type: "success", message: `${data.length} ejercicios cargados. Responde todas las preguntas antes de enviar.` }
+          : { type: "error", message: "No hay preguntas para ese curso, grado y nivel. Prueba otro filtro o pide al docente que registre preguntas." },
+      );
     } catch (error) {
       setStatus({ type: "error", message: error.message });
     }
@@ -644,6 +671,11 @@ function StudentEvaluationPanel({ session }) {
 
   const submitEvaluation = async () => {
     try {
+      if (!canSubmit) {
+        setStatus({ type: "error", message: "Completa todas las respuestas antes de enviar la evaluacion" });
+        return;
+      }
+
       const data = await apiRequest("/v1/evaluaciones", {
         method: "POST",
         token: session.token,
@@ -657,14 +689,20 @@ function StudentEvaluationPanel({ session }) {
         },
       });
       setResult(data);
-      setStatus({ type: "success", message: "Evaluacion enviada" });
+      setConfig({ ...config, nivel: data.nivelAsignado || config.nivel });
+      setStatus({ type: "success", message: "Evaluacion enviada. Revisa tu resultado y refuerzos." });
     } catch (error) {
       setStatus({ type: "error", message: error.message });
     }
   };
 
+  const updateAnswer = (preguntaId, respuestaSeleccionada) => {
+    if (result) return;
+    setAnswers({ ...answers, [preguntaId]: respuestaSeleccionada });
+  };
+
   return (
-    <Panel icon={<ClipboardList size={19} />} title="Ejercicio actual" aside={difficultyLabels[config.nivel]}>
+    <Panel icon={<ClipboardList size={19} />} title="Evaluacion diagnostica" aside={`${answeredCount}/${exercises.length || 0} respondidas`}>
       <div className="form-grid four">
         <Select label="Tema" value={config.cursoId} onChange={(cursoId) => setConfig({ ...config, cursoId })}>
           <option value="">Seleccionar</option>
@@ -693,53 +731,57 @@ function StudentEvaluationPanel({ session }) {
           <Search size={18} />
           Cargar
         </button>
-        <button className="primary-button" onClick={submitEvaluation} disabled={!exercises.length}>
+        <button className="primary-button" onClick={submitEvaluation} disabled={!canSubmit}>
           <Send size={18} />
           Enviar
         </button>
       </div>
 
-      {currentExercise ? (
-        <article className="exercise-card">
+      {exercises.length > 0 ? (
+        <section className="evaluation-flow">
           <div className="exercise-topline">
-            <span>{exercises.length} ejercicios cargados</span>
+            <span>{answeredCount} de {exercises.length} ejercicios respondidos</span>
             <Pill>{progress}% avance</Pill>
           </div>
-          <h2>{currentExercise.contenidoPregunta}</h2>
-          <div className="answer-grid">
-            {["A", "B", "C", "D"].map((letter) => (
-              <button
-                key={letter}
-                className={answers[currentExercise.preguntaId] === letter ? "answer active" : "answer"}
-                onClick={() => setAnswers({ ...answers, [currentExercise.preguntaId]: letter })}
-              >
-                <span>{letter}</span>
-                {currentExercise[`opcion${letter}`]}
-              </button>
+          <div className="progress-track" aria-label="Progreso de evaluacion">
+            <i style={{ width: `${progress}%` }} />
+          </div>
+          <div className="exercise-list">
+            {exercises.map((exercise, index) => (
+              <article className="exercise-card" key={exercise.preguntaId}>
+                <div className="exercise-topline">
+                  <span>Pregunta {index + 1}</span>
+                  <Pill>{answers[exercise.preguntaId] ? "Respondida" : "Pendiente"}</Pill>
+                </div>
+                <h2>{exercise.contenidoPregunta}</h2>
+                <div className="answer-grid">
+                  {["A", "B", "C", "D"].map((letter) => (
+                    <button
+                      key={letter}
+                      className={answers[exercise.preguntaId] === letter ? "answer active" : "answer"}
+                      onClick={() => updateAnswer(exercise.preguntaId, letter)}
+                      disabled={Boolean(result)}
+                    >
+                      <span>{letter}</span>
+                      {exercise[`opcion${letter}`]}
+                    </button>
+                  ))}
+                </div>
+              </article>
             ))}
           </div>
-        </article>
+        </section>
       ) : (
         <EmptyState title="Carga un diagnostico" text="Selecciona un curso y nivel para comenzar la practica." />
       )}
 
-      {exercises.length > 1 && (
-        <div className="list compact">
-          {exercises.slice(1).map((exercise, index) => (
-            <div className="list-row question-row" key={exercise.preguntaId}>
-              <span>{index + 2}. {exercise.contenidoPregunta}</span>
-              <small>{answers[exercise.preguntaId] || "Pendiente"}</small>
-            </div>
-          ))}
-        </div>
-      )}
       {result && <ResultBox result={result} />}
       <StatusMessage status={status} />
     </Panel>
   );
 }
 
-function StudentSummary({ session }) {
+function StudentSummary({ session, summary }) {
   const initials = useMemo(
     () =>
       session.nombre
@@ -754,7 +796,7 @@ function StudentSummary({ session }) {
     <Panel icon={<Sparkles size={19} />} title="Progreso" aside="Resumen">
       <div className="progress-block">
         <div className="progress-ring">
-          <span>5%</span>
+          <span>{summary.progress}%</span>
         </div>
         <div className="mini-illustration">
           <Monitor size={30} />
@@ -768,9 +810,15 @@ function StudentSummary({ session }) {
         </div>
       </div>
       <div className="metric-grid">
-        <Stat label="Racha" value="1" />
-        <Stat label="Nivel" value="Basico" />
+        <Stat label="Respondidas" value={`${summary.answered}/${summary.total}`} />
+        <Stat label="Nivel" value={difficultyLabels[summary.currentLevel] || "Basico"} />
       </div>
+      {summary.result && (
+        <div className="summary-note">
+          <strong>{summary.result.respuestasCorrectas} correctas</strong>
+          <span>Nuevo nivel sugerido: {difficultyLabels[summary.result.nivelAsignado] || summary.result.nivelAsignado}</span>
+        </div>
+      )}
     </Panel>
   );
 }
@@ -788,11 +836,27 @@ function ResultBox({ result }) {
           {result.respuestasCorrectas}/{result.totalPreguntas}
         </strong>
       </div>
+      <div>
+        <span>Nivel asignado</span>
+        <strong>{difficultyLabels[result.nivelAsignado] || result.nivelAsignado}</strong>
+      </div>
       {result.refuerzos?.length > 0 && (
         <div className="support-list">
           {result.refuerzos.map((item) => (
-            <p key={item.preguntaId}>{item.refuerzo}</p>
+            <article key={item.preguntaId}>
+              <strong>{item.contenidoPregunta}</strong>
+              <p>Marcaste {item.respuestaSeleccionada}. Correcta: {item.respuestaCorrecta}.</p>
+              <p>{item.refuerzo || "Repasa el tema y vuelve a intentarlo."}</p>
+            </article>
           ))}
+        </div>
+      )}
+      {result.refuerzos?.length === 0 && (
+        <div className="support-list">
+          <article>
+            <strong>Buen trabajo</strong>
+            <p>No tienes refuerzos pendientes en esta evaluacion.</p>
+          </article>
         </div>
       )}
     </div>
