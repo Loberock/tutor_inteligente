@@ -2,6 +2,7 @@ package com.example.TutorInteligente.Controladores;
 
 import com.example.TutorInteligente.ClasesDTO.ActualizarNivelesRequest;
 import com.example.TutorInteligente.Servicios.AlumnoCursoService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -10,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/alumno-curso")
+@RequestMapping("/api/v1/alumno-cursos")
 public class AlumnoCursoController {
 
     @Autowired
@@ -18,17 +19,8 @@ public class AlumnoCursoController {
 
     @PutMapping("/niveles")
     public ResponseEntity<?> actualizarNiveles(
-            @RequestBody ActualizarNivelesRequest dto
+            @Valid @RequestBody ActualizarNivelesRequest dto
     ) {
-
-        try {
-            return ResponseEntity.ok(
-                    service.actualizarNiveles(dto)
-            );
-        } catch (Exception e) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(e.getMessage());
-        }
+        return ResponseEntity.ok(service.actualizarNiveles(dto));
     }
 }

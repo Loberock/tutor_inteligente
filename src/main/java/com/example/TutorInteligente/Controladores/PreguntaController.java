@@ -3,25 +3,29 @@ package com.example.TutorInteligente.Controladores;
 import com.example.TutorInteligente.ClasesDTO.PreguntaBatchResponse;
 import com.example.TutorInteligente.ClasesDTO.PreguntaRequest;
 import com.example.TutorInteligente.Servicios.PreguntaService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/pregunta")
+@Validated
+@RequestMapping("/api/v1/preguntas")
 public class PreguntaController {
 
     @Autowired
     private PreguntaService service;
 
-    @PostMapping("/batch")
+    @PostMapping("/lote")
     public ResponseEntity<?> registrarPreguntas(
-            @RequestBody List<PreguntaRequest> lista
+            @RequestBody @NotEmpty List<@Valid PreguntaRequest> lista
     ) {
 
         PreguntaBatchResponse response =
