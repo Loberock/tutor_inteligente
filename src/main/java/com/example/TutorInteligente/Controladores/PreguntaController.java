@@ -17,7 +17,7 @@ import java.util.List;
 
 @RestController
 @Validated
-@RequestMapping("/api/v1/preguntas")
+@RequestMapping("/v1/preguntas")
 public class PreguntaController {
 
     @Autowired

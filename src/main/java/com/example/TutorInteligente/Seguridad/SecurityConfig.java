@@ -36,9 +36,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/usuarios", "/api/v1/auth/login").permitAll()
-                        .requestMatchers("/api/v1/preguntas/**", "/api/v1/reportes/**").hasRole("PROFESOR")
-                        .requestMatchers("/api/v1/evaluaciones/**", "/api/v1/alumno-cursos/**").hasRole("ALUMNO")
+                        .requestMatchers("/v1/usuarios", "/v1/sesiones").permitAll()
+                        .requestMatchers("/v1/preguntas/**", "/v1/reportes/**").hasRole("PROFESOR")
+                        .requestMatchers("/v1/evaluaciones/**", "/v1/alumnos-cursos/**").hasRole("ALUMNO")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)

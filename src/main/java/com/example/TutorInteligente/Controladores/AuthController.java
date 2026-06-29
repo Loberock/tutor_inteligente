@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/v1/sesiones")
 public class AuthController {
 
     @Autowired
     private AuthService service;
 
-    @PostMapping("/login")
+    @PostMapping
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(service.login(request));
     }

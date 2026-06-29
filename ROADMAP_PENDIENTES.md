@@ -62,7 +62,7 @@ Tareas:
 4. Crear endpoint de login:
 
 ```http
-POST /auth/login
+POST /v1/sesiones
 ```
 
 Entrada esperada:
@@ -101,7 +101,7 @@ Debe devolver datos basicos del usuario autenticado.
 7. Proteger endpoints:
    - Publicos:
      - `POST /registro`
-     - `POST /auth/login`
+     - `POST /v1/sesiones`
    - Protegidos para profesor:
      - `POST /pregunta/batch`
      - `GET /reporte/rendimiento`
