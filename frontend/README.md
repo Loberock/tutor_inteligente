@@ -34,6 +34,32 @@ server: {
 - Persistencia de sesion en `localStorage`.
 - Uso del JWT en el header `Authorization: Bearer`.
 
+## Imagen del login
+
+La imagen lateral del login esta en:
+
+```text
+frontend/public/auth-visual.svg
+```
+
+Para usar tu propia imagen, copia un archivo `.jpg` o `.webp` dentro de `frontend/public/`, por ejemplo:
+
+```text
+frontend/public/auth-visual.webp
+```
+
+Luego cambia esta linea en `frontend/src/components/AuthScreen.jsx`:
+
+```js
+const AUTH_VISUAL_SRC = "/auth-visual.svg";
+```
+
+por:
+
+```js
+const AUTH_VISUAL_SRC = "/auth-visual.webp";
+```
+
 ## Endpoints consumidos
 
 - `POST /v1/sesiones`
