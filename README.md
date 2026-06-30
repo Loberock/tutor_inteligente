@@ -54,6 +54,20 @@ El backend queda disponible en:
 http://localhost:8080
 ```
 
+## Frontend
+
+La imagen principal del login, el logo del navbar y la ilustracion del progreso usan el mismo recurso:
+
+```text
+frontend/public/classroom-math.svg
+```
+
+Si se quiere cambiar por un `.jpg` o `.webp`, actualizar la ruta en:
+
+```text
+frontend/src/config/assets.js
+```
+
 ## Swagger
 
 Con el backend levantado:

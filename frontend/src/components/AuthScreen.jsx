@@ -1,10 +1,9 @@
 import { KeyRound, Monitor, Plus, School } from "lucide-react";
 import { useState } from "react";
+import { CLASSROOM_IMAGE_SRC } from "../config/assets";
 import { apiRequest } from "../services/api";
 import { Field, SegmentedControl, Select, StatusMessage, SubmitButton } from "./ui";
 import { AppHeader } from "./AppHeader";
-
-const AUTH_VISUAL_SRC = "/auth-visual.svg";
 
 export function AuthScreen({ onLogin }) {
   const [mode, setMode] = useState("login");
@@ -16,11 +15,11 @@ export function AuthScreen({ onLogin }) {
       <section className="auth-layout">
         <aside className="auth-preview" aria-label="Resumen del sistema">
           <figure className="auth-visual">
-            <img src={AUTH_VISUAL_SRC} alt="Estudiante resolviendo ejercicios en Tutor Inteligente" />
+            <img src={CLASSROOM_IMAGE_SRC} alt="Estudiante resolviendo ejercicios en Tutor Inteligente" />
           </figure>
           <div className="preview-note">
-            <strong>Aprender con una ruta clara</strong>
-            <span>Diagnostica, practica y recibe refuerzos segun tu avance.</span>
+            <strong>Practica matematica con una ruta clara</strong>
+            <span>El sistema adapta ejercicios, nivel y refuerzos segun el avance de cada estudiante.</span>
           </div>
         </aside>
 

@@ -34,6 +34,17 @@
   gap: 12px;
 }
 
+.brand-logo {
+  display: block;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border: 1px solid var(--blue-soft);
+  border-radius: 8px;
+  background: #edf8f4;
+  box-shadow: var(--shadow-soft);
+}
+
 .brand-emoji {
   display: grid;
   place-items: center;
@@ -257,6 +268,25 @@ select:focus {
   border-color: var(--teal);
 }
 
+input[readonly] {
+  color: var(--text);
+  background: #fbfdff;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 14px;
+  color: var(--text);
+  background: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
 .primary-button,
 .secondary-button,
 .icon-button {
@@ -314,25 +344,64 @@ select:focus {
 }
 
 .teacher-layout {
-  grid-template-columns: minmax(360px, 0.78fr) minmax(0, 1.22fr);
+  grid-template-columns: minmax(340px, 0.82fr) minmax(0, 1.18fr);
 }
 
-.teacher-side-stack {
+.teacher-side-stack,
+.student-side-stack {
   display: grid;
   gap: 18px;
 }
 
 .student-layout {
-  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.7fr);
+  grid-template-columns: minmax(230px, 0.72fr) minmax(420px, 1.42fr) minmax(270px, 0.82fr);
+}
+
+.student-topbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  margin: -10px 0 20px;
+}
+
+.student-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.level-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  min-width: 112px;
+  border: 2px solid #ffe0bd;
+  border-radius: 999px;
+  padding: 0 18px;
+  color: #bb1f1f;
+  background: #fff9f0;
+  font-weight: 900;
+}
+
+.student-control-panel,
+.student-session-panel,
+.progress-panel {
+  align-self: start;
 }
 
 .panel {
   padding: 18px;
 }
 
-.questions-panel,
-.evaluation-panel {
+.questions-panel {
   min-height: 540px;
+}
+
+.evaluation-panel {
+  min-height: 560px;
+  padding: 24px;
 }
 
 .panel-header {
@@ -364,6 +433,20 @@ select:focus {
 .button-row {
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.practice-toolbar {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(96px, 0.55fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.mini-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .list,
@@ -621,6 +704,12 @@ select:focus {
   padding: 22px;
 }
 
+.exercise-card.featured {
+  min-height: 308px;
+  margin-top: 16px;
+  background: #ffffff;
+}
+
 .exercise-topline {
   justify-content: space-between;
   gap: 12px;
@@ -676,6 +765,47 @@ select:focus {
   cursor: default;
 }
 
+.question-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.question-strip button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  background: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.question-strip button.active {
+  border-color: var(--teal);
+  color: #ffffff;
+  background: var(--teal);
+}
+
+.question-strip button.answered:not(.active) {
+  border-color: rgba(18, 132, 123, 0.28);
+  color: var(--teal);
+  background: #edf8f4;
+}
+
+.practice-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  color: var(--teal);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .progress-block {
   justify-content: space-between;
   gap: 14px;
@@ -696,9 +826,23 @@ select:focus {
   background: #ffffff;
 }
 
+.progress-illustration {
+  width: min(132px, 48%);
+  aspect-ratio: 16 / 10;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #edf8f4;
+}
+
 .profile-block {
   gap: 12px;
   min-width: 0;
+}
+
+.profile-block.compact {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
 }
 
 .avatar {
@@ -840,6 +984,7 @@ select:focus {
   .form-grid.three,
   .form-grid.four,
   .course-form,
+  .practice-toolbar,
   .question-card,
   .report-summary,
   .report-filters,
@@ -848,6 +993,25 @@ select:focus {
   .result-box,
   .metric-grid {
     grid-template-columns: 1fr;
+  }
+
+  .student-topbar {
+    grid-template-columns: 1fr;
+    margin-top: 0;
+  }
+
+  .student-chips {
+    justify-content: flex-start;
+  }
+
+  .practice-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .practice-actions .button-row,
+  .practice-actions button {
+    width: 100%;
   }
 
   .auth-card h1,

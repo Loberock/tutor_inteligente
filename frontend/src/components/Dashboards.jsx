@@ -11,9 +11,12 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CLASSROOM_IMAGE_SRC } from "../config/assets";
 import { apiRequest, difficultyLabels, roleLabels } from "../services/api";
 import { EmptyState, Field, Panel, Pill, Select, Stat, StatusMessage, SubmitButton } from "./ui";
 import { AppHeader } from "./AppHeader";
+
+const gradeLabel = (grado) => (grado ? `${grado}. secundaria` : "Grado");
 
 export function Workspace({ session, onLogout }) {
   const isTeacher = session.tipo === "PROFESOR";
@@ -47,6 +50,13 @@ function TeacherDashboard({ session }) {
 }
 
 function StudentDashboard({ session }) {
+  const [courses, setCourses] = useState([]);
+  const [config, setConfig] = useState({
+    cursoId: "",
+    grado: session.grado || "1",
+    nivel: "BASICO",
+    cantidad: 5,
+  });
   const [summary, setSummary] = useState({
     answered: 0,
     total: 0,
@@ -54,12 +64,76 @@ function StudentDashboard({ session }) {
     result: null,
     currentLevel: "BASICO",
   });
+  const selectedCourse = courses.find((course) => String(course.cursoId) === String(config.cursoId));
+
+  useEffect(() => {
+    apiRequest("/v1/cursos", { token: session.token })
+      .then(setCourses)
+      .catch(() => {});
+  }, [session.token]);
 
   return (
-    <div className="student-layout">
-      <StudentEvaluationPanel session={session} onSummaryChange={setSummary} />
-      <StudentSummary session={session} summary={summary} />
-    </div>
+    <>
+      <div className="student-topbar" aria-label="Estado de practica">
+        <span />
+        <div className="student-chips">
+          <Pill>{gradeLabel(config.grado)}</Pill>
+          <span className="level-chip">{difficultyLabels[config.nivel] || config.nivel}</span>
+        </div>
+      </div>
+      <div className="student-layout">
+        <StudentControlPanel
+          session={session}
+          courses={courses}
+          config={config}
+          setConfig={setConfig}
+          summary={summary}
+        />
+        <StudentEvaluationPanel
+          session={session}
+          config={config}
+          setConfig={setConfig}
+          selectedCourse={selectedCourse}
+          onSummaryChange={setSummary}
+        />
+        <StudentSummary session={session} summary={summary} />
+      </div>
+    </>
+  );
+}
+
+function StudentControlPanel({ session, courses, config, setConfig, summary }) {
+  return (
+    <aside className="student-side-stack">
+      <Panel title="Estudiante" className="student-control-panel">
+        <label className="field">
+          <span>Nombre</span>
+          <input value={session.nombre || "Estudiante"} readOnly />
+        </label>
+        <Select label="Grado" value={config.grado} onChange={(grado) => setConfig({ ...config, grado })}>
+          <option value="1">1. secundaria</option>
+          <option value="2">2. secundaria</option>
+          <option value="3">3. secundaria</option>
+          <option value="4">4. secundaria</option>
+          <option value="5">5. secundaria</option>
+        </Select>
+        <Select label="Tema" value={config.cursoId} onChange={(cursoId) => setConfig({ ...config, cursoId })}>
+          <option value="">Seleccionar tema</option>
+          {courses.map((course) => (
+            <option key={course.cursoId} value={course.cursoId}>
+              {course.nombreCurso}
+            </option>
+          ))}
+        </Select>
+      </Panel>
+
+      <Panel title="Sesion" className="student-session-panel">
+        <div className="mini-stat-grid">
+          <Stat label="Respondidas" value={summary.answered} />
+          <Stat label="Cargadas" value={summary.total} />
+        </div>
+      </Panel>
+    </aside>
   );
 }
 
@@ -329,7 +403,7 @@ function QuestionsPanel({ session, refreshKey }) {
             <article className={editingQuestionId === question.preguntaId ? "question-card active" : "question-card"} key={question.preguntaId}>
               <div>
                 <strong>{question.contenidoPregunta}</strong>
-                <span>{question.cursoNombre} · {question.grado}. secundaria · {difficultyLabels[question.dificultad] || question.dificultad}</span>
+                <span>{question.cursoNombre} - {question.grado}. secundaria - {difficultyLabels[question.dificultad] || question.dificultad}</span>
               </div>
               <div className="row-actions">
                 <button className="ghost-button" title="Editar pregunta" onClick={() => startQuestionEdit(question)}>
@@ -495,31 +569,20 @@ function ReportsPanel({ token }) {
   );
 }
 
-function StudentEvaluationPanel({ session, onSummaryChange }) {
-  const [courses, setCourses] = useState([]);
-  const [config, setConfig] = useState({
-    cursoId: "",
-    grado: "1",
-    nivel: "BASICO",
-    cantidad: 5,
-  });
+function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, onSummaryChange }) {
   const [exercises, setExercises] = useState([]);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState({ type: "", message: "" });
+  const [currentIndex, setCurrentIndex] = useState(0);
   const answeredCount = Object.values(answers).filter(Boolean).length;
+  const currentExercise = exercises[currentIndex];
   const progress = result
     ? Math.round(result.porcentaje)
     : exercises.length
       ? Math.round((answeredCount / exercises.length) * 100)
       : 0;
   const canSubmit = exercises.length > 0 && answeredCount === exercises.length && !result;
-
-  useEffect(() => {
-    apiRequest("/v1/cursos", { token: session.token })
-      .then(setCourses)
-      .catch(() => {});
-  }, [session.token]);
 
   useEffect(() => {
     onSummaryChange({
@@ -530,6 +593,12 @@ function StudentEvaluationPanel({ session, onSummaryChange }) {
       currentLevel: result?.nivelAsignado || config.nivel,
     });
   }, [answeredCount, config.nivel, exercises.length, onSummaryChange, progress, result]);
+
+  useEffect(() => {
+    if (currentIndex >= exercises.length) {
+      setCurrentIndex(0);
+    }
+  }, [currentIndex, exercises.length]);
 
   const loadDiagnostic = async () => {
     try {
@@ -542,9 +611,10 @@ function StudentEvaluationPanel({ session, onSummaryChange }) {
       setExercises(data);
       setAnswers({});
       setResult(null);
+      setCurrentIndex(0);
       setStatus(
         data.length
-          ? { type: "success", message: `${data.length} ejercicios cargados. Responde todas las preguntas antes de enviar.` }
+          ? { type: "success", message: `${data.length} ejercicios cargados. Responde todas las preguntas antes de comprobar.` }
           : { type: "error", message: "No hay preguntas para ese curso, grado y nivel. Prueba otro filtro o pide al docente que registre preguntas." },
       );
     } catch (error) {
@@ -572,7 +642,7 @@ function StudentEvaluationPanel({ session, onSummaryChange }) {
         },
       });
       setResult(data);
-      setConfig({ ...config, nivel: data.nivelAsignado || config.nivel });
+      setConfig((current) => ({ ...current, nivel: data.nivelAsignado || current.nivel }));
       setStatus({ type: "success", message: "Evaluacion enviada. Revisa tu resultado y refuerzos." });
     } catch (error) {
       setStatus({ type: "error", message: error.message });
@@ -584,39 +654,48 @@ function StudentEvaluationPanel({ session, onSummaryChange }) {
     setAnswers({ ...answers, [preguntaId]: respuestaSeleccionada });
   };
 
+  const moveToNextExercise = () => {
+    if (!exercises.length) {
+      loadDiagnostic();
+      return;
+    }
+    setCurrentIndex((index) => (index + 1) % exercises.length);
+    setStatus({ type: "", message: "" });
+  };
+
+  const checkProgress = async () => {
+    if (!exercises.length) {
+      await loadDiagnostic();
+      return;
+    }
+
+    if (!canSubmit) {
+      const pendingIndex = exercises.findIndex((exercise) => !answers[exercise.preguntaId]);
+      if (pendingIndex >= 0) setCurrentIndex(pendingIndex);
+      setStatus({ type: "error", message: "Responde todas las preguntas antes de comprobar la evaluacion." });
+      return;
+    }
+
+    await submitEvaluation();
+  };
+
   return (
-    <Panel icon={<ClipboardList size={19} />} title="Evaluacion diagnostica" aside={`${answeredCount}/${exercises.length || 0} respondidas`} className="evaluation-panel">
-      <div className="form-grid four">
-        <Select label="Tema" value={config.cursoId} onChange={(cursoId) => setConfig({ ...config, cursoId })}>
-          <option value="">Seleccionar</option>
-          {courses.map((course) => (
-            <option key={course.cursoId} value={course.cursoId}>
-              {course.nombreCurso}
-            </option>
-          ))}
-        </Select>
-        <Select label="Grado" value={config.grado} onChange={(grado) => setConfig({ ...config, grado })}>
-          <option value="1">1. secundaria</option>
-          <option value="2">2. secundaria</option>
-          <option value="3">3. secundaria</option>
-          <option value="4">4. secundaria</option>
-          <option value="5">5. secundaria</option>
-        </Select>
+    <Panel
+      icon={<ClipboardList size={19} />}
+      title="Ejercicio actual"
+      aside={selectedCourse?.nombreCurso || "Selecciona un tema"}
+      className="evaluation-panel"
+    >
+      <div className="practice-toolbar">
         <Select label="Nivel" value={config.nivel} onChange={(nivel) => setConfig({ ...config, nivel })}>
           <option value="BASICO">Basico</option>
           <option value="INTERMEDIO">Intermedio</option>
           <option value="AVANZADO">Avanzado</option>
         </Select>
         <Field label="Cantidad" type="number" value={config.cantidad} onChange={(cantidad) => setConfig({ ...config, cantidad })} />
-      </div>
-      <div className="button-row">
         <button className="secondary-button" onClick={loadDiagnostic}>
           <Search size={18} />
-          Cargar
-        </button>
-        <button className="primary-button" onClick={submitEvaluation} disabled={!canSubmit}>
-          <Send size={18} />
-          Enviar
+          Cargar practica
         </button>
       </div>
 
@@ -629,33 +708,56 @@ function StudentEvaluationPanel({ session, onSummaryChange }) {
           <div className="progress-track" aria-label="Progreso de evaluacion">
             <i style={{ width: `${progress}%` }} />
           </div>
-          <div className="exercise-list">
+          <article className="exercise-card featured" key={currentExercise?.preguntaId}>
+            <div className="exercise-topline">
+              <span>Pregunta {currentIndex + 1}</span>
+              <Pill>{answers[currentExercise?.preguntaId] ? "Respondida" : "Pendiente"}</Pill>
+            </div>
+            <h2>{currentExercise?.contenidoPregunta}</h2>
+            <div className="answer-grid">
+              {["A", "B", "C", "D"].map((letter) => (
+                <button
+                  key={letter}
+                  className={answers[currentExercise?.preguntaId] === letter ? "answer active" : "answer"}
+                  onClick={() => updateAnswer(currentExercise.preguntaId, letter)}
+                  disabled={Boolean(result)}
+                >
+                  <span>{letter}</span>
+                  {currentExercise?.[`opcion${letter}`]}
+                </button>
+              ))}
+            </div>
+          </article>
+          <div className="question-strip" aria-label="Preguntas cargadas">
             {exercises.map((exercise, index) => (
-              <article className="exercise-card" key={exercise.preguntaId}>
-                <div className="exercise-topline">
-                  <span>Pregunta {index + 1}</span>
-                  <Pill>{answers[exercise.preguntaId] ? "Respondida" : "Pendiente"}</Pill>
-                </div>
-                <h2>{exercise.contenidoPregunta}</h2>
-                <div className="answer-grid">
-                  {["A", "B", "C", "D"].map((letter) => (
-                    <button
-                      key={letter}
-                      className={answers[exercise.preguntaId] === letter ? "answer active" : "answer"}
-                      onClick={() => updateAnswer(exercise.preguntaId, letter)}
-                      disabled={Boolean(result)}
-                    >
-                      <span>{letter}</span>
-                      {exercise[`opcion${letter}`]}
-                    </button>
-                  ))}
-                </div>
-              </article>
+              <button
+                key={exercise.preguntaId}
+                className={[
+                  index === currentIndex ? "active" : "",
+                  answers[exercise.preguntaId] ? "answered" : "",
+                ].join(" ").trim()}
+                onClick={() => setCurrentIndex(index)}
+                type="button"
+              >
+                {index + 1}
+              </button>
             ))}
+          </div>
+          <div className="practice-actions">
+            <span>Selecciona una alternativa y comprueba tu respuesta.</span>
+            <div className="button-row">
+              <button className="secondary-button" onClick={moveToNextExercise} type="button">
+                Cambiar
+              </button>
+              <button className="primary-button" onClick={checkProgress} disabled={Boolean(result)} type="button">
+                <Send size={18} />
+                Comprobar
+              </button>
+            </div>
           </div>
         </section>
       ) : (
-        <EmptyState title="Carga un diagnostico" text="Selecciona un curso y nivel para comenzar la practica." />
+        <EmptyState title="Carga una practica" text="Selecciona un tema y pulsa Cargar practica para comenzar." />
       )}
 
       {result && <ResultBox result={result} />}
@@ -674,6 +776,10 @@ function StudentSummary({ session, summary }) {
         .slice(0, 2),
     [session.nombre],
   );
+  const errors = summary.result
+    ? Math.max(summary.result.totalPreguntas - summary.result.respuestasCorrectas, 0)
+    : Math.max(summary.total - summary.answered, 0);
+  const recommendation = summary.result?.refuerzos?.length ? "Practicar" : summary.total ? "Continuar" : "Empezar";
 
   return (
     <Panel icon={<Sparkles size={19} />} title="Progreso" aside="Resumen" className="progress-panel">
@@ -681,17 +787,20 @@ function StudentSummary({ session, summary }) {
         <div className="progress-ring">
           <span>{summary.progress}%</span>
         </div>
-        <div className="profile-block">
-          <div className="avatar">{initials}</div>
-          <div>
-            <h2>{session.nombre}</h2>
-            <p>{roleLabels[session.tipo] || session.tipo}</p>
-          </div>
-        </div>
+        <img className="progress-illustration" src={CLASSROOM_IMAGE_SRC} alt="" />
       </div>
       <div className="metric-grid">
-        <Stat label="Respondidas" value={`${summary.answered}/${summary.total}`} />
+        <Stat label="Racha de aciertos" value={summary.result?.respuestasCorrectas ?? summary.answered} />
+        <Stat label="Errores pendientes" value={errors} />
         <Stat label="Nivel" value={difficultyLabels[summary.currentLevel] || "Basico"} />
+        <Stat label="Recomendacion" value={recommendation} />
+      </div>
+      <div className="profile-block compact">
+        <div className="avatar">{initials}</div>
+        <div>
+          <h2>{session.nombre}</h2>
+          <p>{roleLabels[session.tipo] || session.tipo}</p>
+        </div>
       </div>
       {summary.result && (
         <div className="summary-note">
