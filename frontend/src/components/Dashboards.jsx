@@ -350,39 +350,112 @@ function QuestionsPanel({ session, refreshKey }) {
 
 function ReportsPanel({ token }) {
   const [reports, setReports] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [filters, setFilters] = useState({
+    alumnoId: "",
+    cursoId: "",
+    grado: "",
+    soloRefuerzo: false,
+  });
   const [status, setStatus] = useState({ type: "", message: "" });
 
+  useEffect(() => {
+    apiRequest("/v1/cursos", { token })
+      .then(setCourses)
+      .catch(() => {});
+  }, [token]);
+
   const loadReports = useCallback(
-    async (onlySupport = false) => {
+    async (nextFilters = filters) => {
       try {
-        const path = onlySupport ? "/v1/reportes/refuerzos" : "/v1/reportes/rendimiento";
-        setReports(await apiRequest(path, { token }));
+        const params = new URLSearchParams();
+        if (nextFilters.alumnoId) params.set("alumnoId", nextFilters.alumnoId);
+        if (nextFilters.cursoId) params.set("cursoId", nextFilters.cursoId);
+        if (nextFilters.grado) params.set("grado", nextFilters.grado);
+        if (nextFilters.soloRefuerzo) params.set("soloRefuerzo", "true");
+        const query = params.toString();
+        setReports(await apiRequest(`/v1/reportes/rendimiento${query ? `?${query}` : ""}`, { token }));
         setStatus({ type: "", message: "" });
       } catch (error) {
         setStatus({ type: "error", message: error.message });
       }
     },
-    [token],
+    [filters, token],
   );
 
   useEffect(() => {
     loadReports();
   }, [loadReports]);
 
-  const reportRows = reports.slice(0, 6);
+  const summary = useMemo(() => {
+    const total = reports.length;
+    const refuerzo = reports.filter((report) => report.estado === "NECESITA REFUERZO").length;
+    const promedio = total
+      ? reports.reduce((sum, report) => sum + Number(report.porcentaje || 0), 0) / total
+      : 0;
+    const respuestas = reports.reduce((sum, report) => sum + Number(report.totalRespuestas || 0), 0);
+
+    return { total, refuerzo, promedio, respuestas };
+  }, [reports]);
+
+  const updateFilters = (nextFilters) => {
+    setFilters(nextFilters);
+    loadReports(nextFilters);
+  };
+
+  const clearFilters = () => {
+    updateFilters({ alumnoId: "", cursoId: "", grado: "", soloRefuerzo: false });
+  };
 
   return (
-    <Panel icon={<BarChart3 size={19} />} title="Reporte automatico" aside={`${reports.length} registros`} className="reports-panel">
+    <Panel icon={<BarChart3 size={19} />} title="Reportes docentes" aside={`${reports.length} registros`} className="reports-panel">
+      <div className="report-summary">
+        <Stat label="Promedio" value={`${summary.promedio.toFixed(0)}%`} />
+        <Stat label="En refuerzo" value={summary.refuerzo} />
+        <Stat label="Respuestas" value={summary.respuestas} />
+      </div>
+
+      <div className="report-filters">
+        <Field label="Alumno ID" value={filters.alumnoId} placeholder="Opcional" onChange={(alumnoId) => updateFilters({ ...filters, alumnoId })} />
+        <Select label="Curso" value={filters.cursoId} onChange={(cursoId) => updateFilters({ ...filters, cursoId })}>
+          <option value="">Todos</option>
+          {courses.map((course) => (
+            <option key={course.cursoId} value={course.cursoId}>
+              {course.nombreCurso}
+            </option>
+          ))}
+        </Select>
+        <Select label="Grado" value={filters.grado} onChange={(grado) => updateFilters({ ...filters, grado })}>
+          <option value="">Todos</option>
+          <option value="1">1. secundaria</option>
+          <option value="2">2. secundaria</option>
+          <option value="3">3. secundaria</option>
+          <option value="4">4. secundaria</option>
+          <option value="5">5. secundaria</option>
+        </Select>
+        <label className="toggle-field">
+          <span>Solo refuerzo</span>
+          <input
+            type="checkbox"
+            checked={filters.soloRefuerzo}
+            onChange={(event) => updateFilters({ ...filters, soloRefuerzo: event.target.checked })}
+          />
+        </label>
+      </div>
+
       <div className="button-row">
-        <button className="secondary-button" onClick={() => loadReports(false)}>
-          Rendimiento
+        <button className="secondary-button" onClick={() => loadReports()}>
+          <Search size={18} />
+          Actualizar
         </button>
-        <button className="secondary-button" onClick={() => loadReports(true)}>
-          Refuerzos
+        <button className="secondary-button" onClick={clearFilters}>
+          <X size={18} />
+          Limpiar
         </button>
       </div>
+
       <div className="report-bars">
-        {reportRows.slice(0, 4).map((report, index) => (
+        {reports.slice(0, 4).map((report, index) => (
           <div className="report-bar" key={`${report.alumnoId}-${report.cursoId}-${index}`}>
             <span>{report.cursoNombre || report.temaCritico || "Curso"}</span>
             <div>
@@ -392,20 +465,27 @@ function ReportsPanel({ token }) {
           </div>
         ))}
       </div>
+
       <div className="table-card">
         <div className="table-row table-head">
           <span>Alumno</span>
+          <span>Curso</span>
+          <span>Grado</span>
           <span>Rendimiento</span>
+          <span>Nivel</span>
           <span>Estado</span>
         </div>
-        {reportRows.length === 0 ? (
+        {reports.length === 0 ? (
           <EmptyState title="Sin reportes todavia" text="Los reportes apareceran cuando existan evaluaciones." />
         ) : (
-          reportRows.map((report) => (
+          reports.map((report) => (
             <div className="table-row" key={`${report.alumnoId}-${report.cursoId}`}>
               <span>{report.nombreCompleto}</span>
+              <span>{report.cursoNombre}</span>
+              <span>{report.grado}</span>
               <span>{Number(report.porcentaje || report.porcentajePromedio || report.rendimiento || 0).toFixed(0)}%</span>
-              <span>{report.estado}</span>
+              <span>{difficultyLabels[report.nivel] || report.nivel}</span>
+              <span className={report.estado === "NECESITA REFUERZO" ? "state-badge warning" : "state-badge"}>{report.estado}</span>
             </div>
           ))
         )}

@@ -40,7 +40,9 @@ public class ReporteService {
         List<AlumnoRendimientoDTO> resultado = new ArrayList<>();
 
         for (Alumno alumno : alumnos) {
-            if (grado != null && !grado.isBlank() && !alumno.getGrado().equalsIgnoreCase(grado.trim())) {
+            if (grado != null
+                    && !grado.isBlank()
+                    && (alumno.getGrado() == null || !alumno.getGrado().equalsIgnoreCase(grado.trim()))) {
                 continue;
             }
 
