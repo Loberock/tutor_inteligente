@@ -17,6 +17,15 @@ import { EmptyState, Field, Panel, Pill, Select, Stat, StatusMessage, SubmitButt
 import { AppHeader } from "./AppHeader";
 
 const gradeLabel = (grado) => (grado ? `${grado}. secundaria` : "Grado");
+const getStudentPracticeKey = (session) => `tutor-practice-${session.perfilId || session.correo || "anon"}`;
+
+function readSavedPractice(session) {
+  try {
+    return JSON.parse(localStorage.getItem(getStudentPracticeKey(session))) || {};
+  } catch {
+    return {};
+  }
+}
 
 export function Workspace({ session, onLogout }) {
   const isTeacher = session.tipo === "PROFESOR";
@@ -41,21 +50,21 @@ function TeacherDashboard({ session }) {
   return (
     <div className="teacher-layout">
       <QuestionsPanel session={session} refreshKey={refreshKey} />
-      <div className="teacher-side-stack">
-        <ReportsPanel token={session.token} />
-        <CoursesPanel token={session.token} refreshKey={refreshKey} onChanged={() => setRefreshKey((key) => key + 1)} />
-      </div>
+      <ReportsPanel token={session.token} />
+      <CoursesPanel token={session.token} refreshKey={refreshKey} onChanged={() => setRefreshKey((key) => key + 1)} />
     </div>
   );
 }
 
 function StudentDashboard({ session }) {
+  const savedPractice = readSavedPractice(session);
   const [courses, setCourses] = useState([]);
   const [config, setConfig] = useState({
     cursoId: "",
     grado: session.grado || "1",
     nivel: "BASICO",
     cantidad: 5,
+    ...savedPractice.config,
   });
   const [summary, setSummary] = useState({
     answered: 0,
@@ -328,97 +337,102 @@ function QuestionsPanel({ session, refreshKey }) {
   };
 
   return (
-    <Panel icon={<ClipboardList size={19} />} title={editingQuestionId ? "Editar pregunta" : "Registrar pregunta"} aside={`${questions.length} en banco`} className="questions-panel">
-      <form className="stack-form dense" onSubmit={createQuestion}>
-        <Field
-          label="Pregunta"
-          value={form.contenidoPregunta}
-          placeholder="Ejemplo: Si 6x + 2 = 32, cuanto es x?"
-          onChange={(contenidoPregunta) => setForm({ ...form, contenidoPregunta })}
-        />
-        <div className="form-grid three">
-          <Select label="Curso" value={form.cursoId} onChange={(cursoId) => setForm({ ...form, cursoId })}>
-            <option value="">Seleccionar</option>
-            {courses.map((course) => (
-              <option key={course.cursoId} value={course.cursoId}>
-                {course.nombreCurso}
-              </option>
+    <>
+      <Panel icon={<ClipboardList size={19} />} title={editingQuestionId ? "Editar pregunta" : "Registrar pregunta"} aside={`${questions.length} en banco`} className="questions-panel">
+        <form className="stack-form dense" onSubmit={createQuestion}>
+          <Field
+            label="Pregunta"
+            value={form.contenidoPregunta}
+            placeholder="Ejemplo: Si 6x + 2 = 32, cuanto es x?"
+            onChange={(contenidoPregunta) => setForm({ ...form, contenidoPregunta })}
+          />
+          <div className="form-grid three">
+            <Select label="Curso" value={form.cursoId} onChange={(cursoId) => setForm({ ...form, cursoId })}>
+              <option value="">Seleccionar</option>
+              {courses.map((course) => (
+                <option key={course.cursoId} value={course.cursoId}>
+                  {course.nombreCurso}
+                </option>
+              ))}
+            </Select>
+            <Select label="Grado" value={form.grado} onChange={(grado) => setForm({ ...form, grado })}>
+              <option value="1">1. secundaria</option>
+              <option value="2">2. secundaria</option>
+              <option value="3">3. secundaria</option>
+              <option value="4">4. secundaria</option>
+              <option value="5">5. secundaria</option>
+            </Select>
+            <Select label="Dificultad" value={form.dificultad} onChange={(dificultad) => setForm({ ...form, dificultad })}>
+              <option value="BASICO">Basico</option>
+              <option value="INTERMEDIO">Intermedio</option>
+              <option value="AVANZADO">Avanzado</option>
+            </Select>
+          </div>
+          <div className="form-grid two">
+            {["A", "B", "C", "D"].map((letter) => (
+              <Field
+                key={letter}
+                label={`Opcion ${letter}`}
+                value={form[`opcion${letter}`]}
+                onChange={(value) => setForm({ ...form, [`opcion${letter}`]: value })}
+              />
             ))}
-          </Select>
-          <Select label="Grado" value={form.grado} onChange={(grado) => setForm({ ...form, grado })}>
-            <option value="1">1. secundaria</option>
-            <option value="2">2. secundaria</option>
-            <option value="3">3. secundaria</option>
-            <option value="4">4. secundaria</option>
-            <option value="5">5. secundaria</option>
-          </Select>
-          <Select label="Dificultad" value={form.dificultad} onChange={(dificultad) => setForm({ ...form, dificultad })}>
-            <option value="BASICO">Basico</option>
-            <option value="INTERMEDIO">Intermedio</option>
-            <option value="AVANZADO">Avanzado</option>
-          </Select>
-        </div>
-        <div className="form-grid two">
-          {["A", "B", "C", "D"].map((letter) => (
-            <Field
-              key={letter}
-              label={`Opcion ${letter}`}
-              value={form[`opcion${letter}`]}
-              onChange={(value) => setForm({ ...form, [`opcion${letter}`]: value })}
-            />
-          ))}
-        </div>
-        <div className="form-grid two">
-          <Select
-            label="Respuesta correcta"
-            value={form.respuestaCorrecta}
-            onChange={(respuestaCorrecta) => setForm({ ...form, respuestaCorrecta })}
-          >
-            <option>A</option>
-            <option>B</option>
-            <option>C</option>
-            <option>D</option>
-          </Select>
-          <Field label="Refuerzo" value={form.refuerzo} placeholder="Pista breve para el estudiante" onChange={(refuerzo) => setForm({ ...form, refuerzo })} />
-        </div>
-        <div className="button-row">
-          <SubmitButton icon={editingQuestionId ? <Edit3 size={18} /> : <Plus size={18} />} label={editingQuestionId ? "Actualizar" : "Guardar pregunta"} />
-          <button type="button" className="secondary-button" onClick={loadQuestions}>
-            <Search size={18} />
-            Ver banco
-          </button>
-          {editingQuestionId && (
-            <button type="button" className="secondary-button" onClick={clearQuestionForm}>
-              <X size={18} />
-              Cancelar
+          </div>
+          <div className="form-grid two">
+            <Select
+              label="Respuesta correcta"
+              value={form.respuestaCorrecta}
+              onChange={(respuestaCorrecta) => setForm({ ...form, respuestaCorrecta })}
+            >
+              <option>A</option>
+              <option>B</option>
+              <option>C</option>
+              <option>D</option>
+            </Select>
+            <Field label="Refuerzo" value={form.refuerzo} placeholder="Pista breve para el estudiante" onChange={(refuerzo) => setForm({ ...form, refuerzo })} />
+          </div>
+          <div className="button-row">
+            <SubmitButton icon={editingQuestionId ? <Edit3 size={18} /> : <Plus size={18} />} label={editingQuestionId ? "Actualizar" : "Guardar pregunta"} />
+            <button type="button" className="secondary-button" onClick={loadQuestions}>
+              <Search size={18} />
+              Ver banco
             </button>
+            {editingQuestionId && (
+              <button type="button" className="secondary-button" onClick={clearQuestionForm}>
+                <X size={18} />
+                Cancelar
+              </button>
+            )}
+          </div>
+        </form>
+        <StatusMessage status={status} />
+      </Panel>
+
+      <Panel icon={<BookOpen size={19} />} title="Preguntas agregadas" aside={`${questions.length} nuevas`} className="question-bank-panel">
+        <div className="question-bank">
+          {questions.length === 0 ? (
+            <EmptyState title="Sin preguntas cargadas" text="Usa los filtros y guarda nuevas preguntas para este curso." />
+          ) : (
+            questions.map((question) => (
+              <article className={editingQuestionId === question.preguntaId ? "question-card active" : "question-card"} key={question.preguntaId}>
+                <div>
+                  <strong>{question.contenidoPregunta}</strong>
+                  <span>{question.cursoNombre} - {question.grado}. secundaria - {difficultyLabels[question.dificultad] || question.dificultad}</span>
+                </div>
+                <div className="row-actions">
+                  <button className="ghost-button" title="Editar pregunta" onClick={() => startQuestionEdit(question)}>
+                    <Edit3 size={16} />
+                  </button>
+                  <button className="ghost-button danger" title="Eliminar pregunta" onClick={() => deleteQuestion(question)}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </article>
+            ))
           )}
         </div>
-      </form>
-      <div className="question-bank">
-        {questions.length === 0 ? (
-          <EmptyState title="Sin preguntas cargadas" text="Usa los filtros y guarda nuevas preguntas para este curso." />
-        ) : (
-          questions.map((question) => (
-            <article className={editingQuestionId === question.preguntaId ? "question-card active" : "question-card"} key={question.preguntaId}>
-              <div>
-                <strong>{question.contenidoPregunta}</strong>
-                <span>{question.cursoNombre} - {question.grado}. secundaria - {difficultyLabels[question.dificultad] || question.dificultad}</span>
-              </div>
-              <div className="row-actions">
-                <button className="ghost-button" title="Editar pregunta" onClick={() => startQuestionEdit(question)}>
-                  <Edit3 size={16} />
-                </button>
-                <button className="ghost-button danger" title="Eliminar pregunta" onClick={() => deleteQuestion(question)}>
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </article>
-          ))
-        )}
-      </div>
-      <StatusMessage status={status} />
-    </Panel>
+      </Panel>
+    </>
   );
 }
 
@@ -570,11 +584,12 @@ function ReportsPanel({ token }) {
 }
 
 function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, onSummaryChange }) {
-  const [exercises, setExercises] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [result, setResult] = useState(null);
-  const [status, setStatus] = useState({ type: "", message: "" });
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const savedPractice = readSavedPractice(session);
+  const [exercises, setExercises] = useState(savedPractice.exercises || []);
+  const [answers, setAnswers] = useState(savedPractice.answers || {});
+  const [result, setResult] = useState(savedPractice.result || null);
+  const [status, setStatus] = useState(savedPractice.status || { type: "", message: "" });
+  const [currentIndex, setCurrentIndex] = useState(savedPractice.currentIndex || 0);
   const answeredCount = Object.values(answers).filter(Boolean).length;
   const currentExercise = exercises[currentIndex];
   const progress = result
@@ -599,6 +614,13 @@ function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, on
       setCurrentIndex(0);
     }
   }, [currentIndex, exercises.length]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      getStudentPracticeKey(session),
+      JSON.stringify({ config, exercises, answers, result, status, currentIndex }),
+    );
+  }, [answers, config, currentIndex, exercises, result, session, status]);
 
   const loadDiagnostic = async () => {
     try {
@@ -654,6 +676,15 @@ function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, on
     setAnswers({ ...answers, [preguntaId]: respuestaSeleccionada });
   };
 
+  const clearPractice = () => {
+    setExercises([]);
+    setAnswers({});
+    setResult(null);
+    setCurrentIndex(0);
+    setStatus({ type: "", message: "" });
+    localStorage.removeItem(getStudentPracticeKey(session));
+  };
+
   const moveToNextExercise = () => {
     if (!exercises.length) {
       loadDiagnostic();
@@ -692,7 +723,10 @@ function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, on
           <option value="INTERMEDIO">Intermedio</option>
           <option value="AVANZADO">Avanzado</option>
         </Select>
-        <Field label="Cantidad" type="number" value={config.cantidad} onChange={(cantidad) => setConfig({ ...config, cantidad })} />
+        <div className="field-group">
+          <Field label="Preguntas" type="number" value={config.cantidad} onChange={(cantidad) => setConfig({ ...config, cantidad })} />
+          <small>Cuantas preguntas quieres cargar.</small>
+        </div>
         <button className="secondary-button" onClick={loadDiagnostic}>
           <Search size={18} />
           Cargar practica
@@ -719,7 +753,7 @@ function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, on
                 <button
                   key={letter}
                   className={answers[currentExercise?.preguntaId] === letter ? "answer active" : "answer"}
-                  onClick={() => updateAnswer(currentExercise.preguntaId, letter)}
+                  onClick={() => currentExercise && updateAnswer(currentExercise.preguntaId, letter)}
                   disabled={Boolean(result)}
                 >
                   <span>{letter}</span>
@@ -753,6 +787,12 @@ function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, on
                 <Send size={18} />
                 Comprobar
               </button>
+              {result && (
+                <button className="secondary-button" onClick={clearPractice} type="button">
+                  <X size={18} />
+                  Limpiar
+                </button>
+              )}
             </div>
           </div>
         </section>
@@ -760,7 +800,7 @@ function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, on
         <EmptyState title="Carga una practica" text="Selecciona un tema y pulsa Cargar practica para comenzar." />
       )}
 
-      {result && <ResultBox result={result} />}
+      {result && <ResultBox result={result} onClear={clearPractice} />}
       <StatusMessage status={status} />
     </Panel>
   );
@@ -812,25 +852,38 @@ function StudentSummary({ session, summary }) {
   );
 }
 
-function ResultBox({ result }) {
+function ResultBox({ result, onClear }) {
   return (
     <div className="result-box">
-      <div>
-        <span>Resultado</span>
-        <strong>{result.porcentaje.toFixed(1)}%</strong>
+      <div className="result-header">
+        <div>
+          <span>Resultado final</span>
+          <strong>{result.porcentaje.toFixed(1)}%</strong>
+        </div>
+        <button className="secondary-button" onClick={onClear} type="button">
+          <X size={18} />
+          Limpiar practica
+        </button>
       </div>
-      <div>
-        <span>Correctas</span>
-        <strong>
-          {result.respuestasCorrectas}/{result.totalPreguntas}
-        </strong>
-      </div>
-      <div>
-        <span>Nivel asignado</span>
-        <strong>{difficultyLabels[result.nivelAsignado] || result.nivelAsignado}</strong>
+      <div className="result-metrics">
+        <div>
+          <span>Correctas</span>
+          <strong>
+            {result.respuestasCorrectas}/{result.totalPreguntas}
+          </strong>
+        </div>
+        <div>
+          <span>Nivel asignado</span>
+          <strong>{difficultyLabels[result.nivelAsignado] || result.nivelAsignado}</strong>
+        </div>
+        <div>
+          <span>Refuerzos</span>
+          <strong>{result.refuerzos?.length || 0}</strong>
+        </div>
       </div>
       {result.refuerzos?.length > 0 && (
         <div className="support-list">
+          <h3>Refuerzos recomendados</h3>
           {result.refuerzos.map((item) => (
             <article key={item.preguntaId}>
               <strong>{item.contenidoPregunta}</strong>
@@ -842,7 +895,7 @@ function ResultBox({ result }) {
       )}
       {result.refuerzos?.length === 0 && (
         <div className="support-list">
-          <article>
+          <article className="success-support">
             <strong>Buen trabajo</strong>
             <p>No tienes refuerzos pendientes en esta evaluacion.</p>
           </article>

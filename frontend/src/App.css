@@ -322,7 +322,7 @@ input[readonly] {
 }
 
 .workspace {
-  width: min(1180px, calc(100% - 34px));
+  width: min(1440px, calc(100% - 28px));
   margin: 0 auto;
   padding: 36px 0 52px;
 }
@@ -344,7 +344,30 @@ input[readonly] {
 }
 
 .teacher-layout {
-  grid-template-columns: minmax(340px, 0.82fr) minmax(0, 1.18fr);
+  display: grid;
+  grid-template-columns: minmax(300px, 0.48fr) minmax(0, 1.52fr);
+  grid-template-areas:
+    "questions reports"
+    "bank bank"
+    "courses courses";
+  gap: 22px;
+  align-items: start;
+}
+
+.questions-panel {
+  grid-area: questions;
+}
+
+.reports-panel {
+  grid-area: reports;
+}
+
+.question-bank-panel {
+  grid-area: bank;
+}
+
+.courses-panel {
+  grid-area: courses;
 }
 
 .teacher-side-stack,
@@ -354,7 +377,8 @@ input[readonly] {
 }
 
 .student-layout {
-  grid-template-columns: minmax(230px, 0.72fr) minmax(420px, 1.42fr) minmax(270px, 0.82fr);
+  grid-template-columns: minmax(230px, 0.68fr) minmax(460px, 1.5fr) minmax(270px, 0.82fr);
+  gap: 22px;
 }
 
 .student-topbar {
@@ -395,7 +419,8 @@ input[readonly] {
   padding: 18px;
 }
 
-.questions-panel {
+.questions-panel,
+.reports-panel {
   min-height: 540px;
 }
 
@@ -427,7 +452,7 @@ input[readonly] {
 }
 
 .course-form {
-  grid-template-columns: 1fr 40px auto;
+  grid-template-columns: minmax(220px, 1fr) 40px auto;
 }
 
 .button-row {
@@ -437,10 +462,21 @@ input[readonly] {
 
 .practice-toolbar {
   display: grid;
-  grid-template-columns: minmax(130px, 0.8fr) minmax(96px, 0.55fr) auto;
+  grid-template-columns: minmax(150px, 0.75fr) minmax(130px, 0.6fr) auto;
   gap: 10px;
   align-items: end;
   margin-bottom: 16px;
+}
+
+.field-group {
+  display: grid;
+  gap: 4px;
+}
+
+.field-group small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
 }
 
 .mini-stat-grid {
@@ -533,6 +569,17 @@ input[readonly] {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fbfdff;
+}
+
+.question-bank-panel .question-bank {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+}
+
+.courses-panel .list.compact {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  max-height: none;
+  overflow: visible;
 }
 
 .question-card.active {
@@ -873,13 +920,39 @@ input[readonly] {
 
 .result-box {
   display: grid;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid rgba(18, 132, 123, 0.28);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #e6f7ed 0%, #f8fffb 100%);
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.result-header > div,
+.result-metrics > div {
+  display: grid;
+  gap: 4px;
+}
+
+.result-metrics {
+  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 12px;
-  padding: 14px;
-  border: 1px solid rgba(18, 132, 123, 0.22);
+}
+
+.result-metrics > div {
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid rgba(18, 132, 123, 0.16);
   border-radius: 8px;
-  background: #e6f7ed;
+  background: #ffffff;
 }
 
 .result-box strong {
@@ -894,6 +967,12 @@ input[readonly] {
   gap: 8px;
 }
 
+.support-list h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+}
+
 .support-list article,
 .summary-note {
   display: grid;
@@ -901,6 +980,11 @@ input[readonly] {
   padding: 12px;
   border: 1px solid rgba(18, 132, 123, 0.18);
   border-radius: 8px;
+  background: #ffffff;
+}
+
+.support-list article.success-support {
+  border-color: rgba(18, 132, 123, 0.2);
   background: #ffffff;
 }
 
@@ -954,6 +1038,14 @@ input[readonly] {
     grid-template-columns: 1fr;
   }
 
+  .teacher-layout {
+    grid-template-areas:
+      "questions"
+      "reports"
+      "bank"
+      "courses";
+  }
+
   .auth-layout {
     min-height: auto;
   }
@@ -991,6 +1083,7 @@ input[readonly] {
   .table-row,
   .report-bar,
   .result-box,
+  .result-metrics,
   .metric-grid {
     grid-template-columns: 1fr;
   }
@@ -1010,8 +1103,14 @@ input[readonly] {
   }
 
   .practice-actions .button-row,
-  .practice-actions button {
+  .practice-actions button,
+  .result-header button {
     width: 100%;
+  }
+
+  .result-header {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .auth-card h1,
