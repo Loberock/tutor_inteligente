@@ -39,4 +39,12 @@ public class EvaluacionController {
     ) {
         return ResponseEntity.ok(service.procesarEvaluacion(dto));
     }
+
+    @GetMapping("/progreso")
+    public ResponseEntity<?> obtenerProgreso(
+            @RequestParam @NotNull(message = "El alumnoId es obligatorio") Integer alumnoId,
+            @RequestParam(required = false) Integer cursoId
+    ) {
+        return ResponseEntity.ok(service.obtenerUltimoProgreso(alumnoId, cursoId));
+    }
 }

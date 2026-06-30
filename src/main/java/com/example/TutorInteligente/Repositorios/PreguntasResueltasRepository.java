@@ -13,4 +13,6 @@ public interface PreguntasResueltasRepository extends JpaRepository<PreguntasRes
             Integer alumnoId,
             Integer cursoId
     );
+
+    List<PreguntasResueltas> findByEvaluacion_EvaluacionId(Integer evaluacionId);
 }

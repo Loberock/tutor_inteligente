@@ -3,10 +3,10 @@ package com.example.TutorInteligente.Servicios;
 import com.example.TutorInteligente.ClasesDTO.AlumnoRendimientoDTO;
 import com.example.TutorInteligente.Entidades.Alumno;
 import com.example.TutorInteligente.Entidades.AlumnoCurso;
-import com.example.TutorInteligente.Entidades.PreguntasResueltas;
+import com.example.TutorInteligente.Entidades.Evaluacion;
 import com.example.TutorInteligente.Repositorios.AlumnoCursoRepository;
 import com.example.TutorInteligente.Repositorios.AlumnoRepository;
-import com.example.TutorInteligente.Repositorios.PreguntasResueltasRepository;
+import com.example.TutorInteligente.Repositorios.EvaluacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +23,7 @@ public class ReporteService {
     private AlumnoCursoRepository alumnoCursoRepo;
 
     @Autowired
-    private PreguntasResueltasRepository prRepo;
+    private EvaluacionRepository evaluacionRepo;
 
     public List<AlumnoRendimientoDTO> obtenerRendimiento(
             Integer alumnoId,
@@ -53,23 +53,28 @@ public class ReporteService {
                     continue;
                 }
 
-                List<PreguntasResueltas> respuestas =
-                        prRepo.findByAlumno_AlumnoIdAndPregunta_Curso_CursoId(
-                                alumno.getAlumnoId(),
-                                alumnoCurso.getCurso().getCursoId()
-                        );
+                List<Evaluacion> evaluaciones = evaluacionRepo.findByAlumno_AlumnoIdAndCurso_CursoId(
+                        alumno.getAlumnoId(),
+                        alumnoCurso.getCurso().getCursoId()
+                );
 
-                if (respuestas.isEmpty()) {
+                if (evaluaciones.isEmpty()) {
                     continue;
                 }
 
-                long total = respuestas.size();
-                long correctas = respuestas.stream()
-                        .filter(PreguntasResueltas::getCorrecta)
-                        .count();
+                long total = evaluaciones.stream()
+                        .mapToLong(Evaluacion::getTotalPreguntas)
+                        .sum();
+                long correctas = evaluaciones.stream()
+                        .mapToLong(Evaluacion::getRespuestasCorrectas)
+                        .sum();
 
                 double porcentaje = (correctas * 100.0) / total;
                 String estado = estadoPorPorcentaje(porcentaje);
+                String ultimoNivel = evaluaciones.stream()
+                        .max((a, b) -> a.getFecha().compareTo(b.getFecha()))
+                        .map(Evaluacion::getNivelAsignado)
+                        .orElse(alumnoCurso.getNivel());
 
                 if (Boolean.TRUE.equals(soloRefuerzo) && !"NECESITA REFUERZO".equals(estado)) {
                     continue;
@@ -81,7 +86,7 @@ public class ReporteService {
                         alumno.getGrado(),
                         alumnoCurso.getCurso().getCursoId(),
                         alumnoCurso.getCurso().getNombreCurso(),
-                        alumnoCurso.getNivel(),
+                        ultimoNivel,
                         total,
                         correctas,
                         porcentaje,

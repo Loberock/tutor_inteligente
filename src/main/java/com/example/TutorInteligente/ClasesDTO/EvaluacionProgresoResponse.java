@@ -8,11 +8,11 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public class EvaluacionResultadoResponse {
-
-    private String mensaje;
+public class EvaluacionProgresoResponse {
 
     private Integer evaluacionId;
+
+    private Integer alumnoId;
 
     private Integer cursoId;
 

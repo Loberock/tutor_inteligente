@@ -11,34 +11,34 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "preguntas_resueltas")
-public class PreguntasResueltas {
+@Table(name = "evaluaciones")
+public class Evaluacion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer preguntaResueltaId;
+    private Integer evaluacionId;
 
     @ManyToOne
     @JoinColumn(name = "alumno_id")
     private Alumno alumno;
 
     @ManyToOne
-    @JoinColumn(name = "pregunta_id")
-    private Pregunta pregunta;
+    @JoinColumn(name = "curso_id")
+    private Curso curso;
 
-    @ManyToOne
-    @JoinColumn(name = "evaluacion_id")
-    private Evaluacion evaluacion;
+    private Integer totalPreguntas;
 
-    private String respuestaSeleccionada;
+    private Integer respuestasCorrectas;
 
-    private Boolean correcta;
+    private Double porcentaje;
 
-    private LocalDate fecha;
+    private String nivelAsignado;
+
+    private LocalDateTime fecha;
 }

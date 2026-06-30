@@ -17,15 +17,6 @@ import { EmptyState, Field, Panel, Pill, Select, Stat, StatusMessage, SubmitButt
 import { AppHeader } from "./AppHeader";
 
 const gradeLabel = (grado) => (grado ? `${grado}. secundaria` : "Grado");
-const getStudentPracticeKey = (session) => `tutor-practice-${session.perfilId || session.correo || "anon"}`;
-
-function readSavedPractice(session) {
-  try {
-    return JSON.parse(localStorage.getItem(getStudentPracticeKey(session))) || {};
-  } catch {
-    return {};
-  }
-}
 
 export function Workspace({ session, onLogout }) {
   const isTeacher = session.tipo === "PROFESOR";
@@ -57,14 +48,12 @@ function TeacherDashboard({ session }) {
 }
 
 function StudentDashboard({ session }) {
-  const savedPractice = readSavedPractice(session);
   const [courses, setCourses] = useState([]);
   const [config, setConfig] = useState({
     cursoId: "",
     grado: session.grado || "1",
     nivel: "BASICO",
     cantidad: 5,
-    ...savedPractice.config,
   });
   const [summary, setSummary] = useState({
     answered: 0,
@@ -584,12 +573,11 @@ function ReportsPanel({ token }) {
 }
 
 function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, onSummaryChange }) {
-  const savedPractice = readSavedPractice(session);
-  const [exercises, setExercises] = useState(savedPractice.exercises || []);
-  const [answers, setAnswers] = useState(savedPractice.answers || {});
-  const [result, setResult] = useState(savedPractice.result || null);
-  const [status, setStatus] = useState(savedPractice.status || { type: "", message: "" });
-  const [currentIndex, setCurrentIndex] = useState(savedPractice.currentIndex || 0);
+  const [exercises, setExercises] = useState([]);
+  const [answers, setAnswers] = useState({});
+  const [result, setResult] = useState(null);
+  const [status, setStatus] = useState({ type: "", message: "" });
+  const [currentIndex, setCurrentIndex] = useState(0);
   const answeredCount = Object.values(answers).filter(Boolean).length;
   const currentExercise = exercises[currentIndex];
   const progress = result
@@ -616,11 +604,23 @@ function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, on
   }, [currentIndex, exercises.length]);
 
   useEffect(() => {
-    localStorage.setItem(
-      getStudentPracticeKey(session),
-      JSON.stringify({ config, exercises, answers, result, status, currentIndex }),
-    );
-  }, [answers, config, currentIndex, exercises, result, session, status]);
+    if (exercises.length || answeredCount) return;
+
+    const params = new URLSearchParams({ alumnoId: String(session.perfilId) });
+    if (config.cursoId) params.set("cursoId", config.cursoId);
+
+    apiRequest(`/v1/evaluaciones/progreso?${params.toString()}`, { token: session.token })
+      .then((data) => {
+        if (!data) return;
+        setResult(data);
+        setConfig((current) => ({
+          ...current,
+          cursoId: data.cursoId ? String(data.cursoId) : current.cursoId,
+          nivel: data.nivelAsignado || current.nivel,
+        }));
+      })
+      .catch(() => {});
+  }, [answeredCount, config.cursoId, exercises.length, session.perfilId, session.token, setConfig]);
 
   const loadDiagnostic = async () => {
     try {
@@ -682,7 +682,6 @@ function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, on
     setResult(null);
     setCurrentIndex(0);
     setStatus({ type: "", message: "" });
-    localStorage.removeItem(getStudentPracticeKey(session));
   };
 
   const moveToNextExercise = () => {
