@@ -1,19 +1,19 @@
 package com.example.TutorInteligente.ClasesDTO;
 
-import com.example.TutorInteligente.Entidades.Alumno;
-import com.example.TutorInteligente.Entidades.Profesor;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
+@AllArgsConstructor
 public class RegistroResponse {
 
     private Boolean creado;
 
     private String tipo;
 
-    private Alumno alumno;
+    private Integer usuarioId;
 
-    private Profesor profesor;
+    private Integer perfilId;
+
+    private String nombreCompleto;
 }

@@ -62,9 +62,6 @@ public class RegistroService {
         usuario.setEstado(true);
         usuario = usuarioRepo.save(usuario);
 
-        RegistroResponse response = new RegistroResponse();
-        response.setCreado(true);
-
         if ("ALUMNO".equals(tipo)) {
             Alumno alumno = new Alumno();
             alumno.setNombre(dto.getNombre());
@@ -83,9 +80,13 @@ public class RegistroService {
                 alumnoCursoRepo.save(ac);
             }
 
-            response.setTipo("ALUMNO");
-            response.setAlumno(alumno);
-            return response;
+            return new RegistroResponse(
+                    true,
+                    "ALUMNO",
+                    usuario.getUsuarioId(),
+                    alumno.getAlumnoId(),
+                    alumno.getNombre() + " " + alumno.getApellido()
+            );
         }
 
         Profesor profesor = new Profesor();
@@ -94,9 +95,12 @@ public class RegistroService {
         profesor.setUsuario(usuario);
         profesor = profesorRepo.save(profesor);
 
-        response.setTipo("PROFESOR");
-        response.setProfesor(profesor);
-
-        return response;
+        return new RegistroResponse(
+                true,
+                "PROFESOR",
+                usuario.getUsuarioId(),
+                profesor.getProfesorId(),
+                profesor.getNombre() + " " + profesor.getApellido()
+        );
     }
 }

@@ -19,6 +19,7 @@ import com.example.TutorInteligente.Repositorios.CursoRepository;
 import com.example.TutorInteligente.Repositorios.EvaluacionRepository;
 import com.example.TutorInteligente.Repositorios.PreguntaRepository;
 import com.example.TutorInteligente.Repositorios.PreguntasResueltasRepository;
+import com.example.TutorInteligente.Repositorios.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +51,9 @@ public class EvaluacionService {
     @Autowired
     private EvaluacionRepository evaluacionRepo;
 
+    @Autowired
+    private UsuarioRepository usuarioRepo;
+
     public List<EjercicioResponse> obtenerDiagnostico(
             Integer cursoId,
             String grado,
@@ -69,9 +73,8 @@ public class EvaluacionService {
                 .toList();
     }
 
-    public EvaluacionResultadoResponse procesarEvaluacion(EvaluacionRequest dto) {
-        Alumno alumno = alumnoRepo.findById(dto.getAlumnoId())
-                .orElseThrow(() -> new RuntimeException("Alumno no encontrado"));
+    public EvaluacionResultadoResponse procesarEvaluacion(EvaluacionRequest dto, String correoAlumno) {
+        Alumno alumno = buscarAlumnoPorCorreo(correoAlumno);
 
         int correctas = 0;
         List<RefuerzoResponse> refuerzos = new ArrayList<>();
@@ -153,7 +156,10 @@ public class EvaluacionService {
     }
 
     @Transactional(readOnly = true)
-    public EvaluacionProgresoResponse obtenerUltimoProgreso(Integer alumnoId, Integer cursoId) {
+    public EvaluacionProgresoResponse obtenerUltimoProgreso(String correoAlumno, Integer cursoId) {
+        Alumno alumno = buscarAlumnoPorCorreo(correoAlumno);
+        Integer alumnoId = alumno.getAlumnoId();
+
         Evaluacion evaluacion = (cursoId == null
                 ? evaluacionRepo.findTopByAlumno_AlumnoIdOrderByFechaDesc(alumnoId)
                 : evaluacionRepo.findTopByAlumno_AlumnoIdAndCurso_CursoIdOrderByFechaDesc(alumnoId, cursoId))
@@ -164,6 +170,15 @@ public class EvaluacionService {
         }
 
         return toProgresoResponse(evaluacion);
+    }
+
+    private Alumno buscarAlumnoPorCorreo(String correo) {
+        Integer usuarioId = usuarioRepo.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"))
+                .getUsuarioId();
+
+        return alumnoRepo.findByUsuario_UsuarioId(usuarioId)
+                .orElseThrow(() -> new RuntimeException("Alumno no encontrado"));
     }
 
     private AlumnoCurso obtenerRelacionAlumnoCurso(Alumno alumno, Integer cursoId) {

@@ -282,7 +282,6 @@ function QuestionsPanel({ session, refreshKey }) {
         token: session.token,
         body: {
           ...form,
-          profesorId: Number(session.perfilId),
           cursoId: Number(form.cursoId),
         },
       });
@@ -606,10 +605,10 @@ function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, on
   useEffect(() => {
     if (exercises.length || answeredCount) return;
 
-    const params = new URLSearchParams({ alumnoId: String(session.perfilId) });
+    const params = new URLSearchParams();
     if (config.cursoId) params.set("cursoId", config.cursoId);
 
-    apiRequest(`/v1/evaluaciones/progreso?${params.toString()}`, { token: session.token })
+    apiRequest(`/v1/evaluaciones/progreso${params.toString() ? `?${params.toString()}` : ""}`, { token: session.token })
       .then((data) => {
         if (!data) return;
         setResult(data);
@@ -620,7 +619,7 @@ function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, on
         }));
       })
       .catch(() => {});
-  }, [answeredCount, config.cursoId, exercises.length, session.perfilId, session.token, setConfig]);
+  }, [answeredCount, config.cursoId, exercises.length, session.token, setConfig]);
 
   const loadDiagnostic = async () => {
     try {
@@ -655,7 +654,6 @@ function StudentEvaluationPanel({ session, config, setConfig, selectedCourse, on
         method: "POST",
         token: session.token,
         body: {
-          alumnoId: Number(session.perfilId),
           respuestas: exercises.map((exercise) => ({
             preguntaId: exercise.preguntaId,
             respuestaSeleccionada: answers[exercise.preguntaId] || "",

@@ -10,8 +10,6 @@ import java.util.Optional;
 @Repository
 public interface EvaluacionRepository extends JpaRepository<Evaluacion, Integer> {
 
-    List<Evaluacion> findByAlumno_AlumnoId(Integer alumnoId);
-
     List<Evaluacion> findByAlumno_AlumnoIdAndCurso_CursoId(Integer alumnoId, Integer cursoId);
 
     Optional<Evaluacion> findTopByAlumno_AlumnoIdOrderByFechaDesc(Integer alumnoId);

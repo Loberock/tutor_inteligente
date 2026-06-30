@@ -9,6 +9,7 @@ import com.example.TutorInteligente.Entidades.Profesor;
 import com.example.TutorInteligente.Repositorios.CursoRepository;
 import com.example.TutorInteligente.Repositorios.PreguntaRepository;
 import com.example.TutorInteligente.Repositorios.ProfesorRepository;
+import com.example.TutorInteligente.Repositorios.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,9 @@ public class PreguntaService {
     @Autowired
     private CursoRepository cursoRepo;
 
+    @Autowired
+    private UsuarioRepository usuarioRepo;
+
     public List<PreguntaResponse> listar(Integer cursoId, String grado, String dificultad) {
         return preguntaRepo.buscarPorFiltros(
                         cursoId,
@@ -43,9 +47,11 @@ public class PreguntaService {
         return toResponse(buscarPregunta(preguntaId));
     }
 
-    public PreguntaBatchResponse registrarLista(List<PreguntaRequest> lista) {
+    public PreguntaBatchResponse registrarLista(List<PreguntaRequest> lista, String correoProfesor) {
+        Profesor profesor = buscarProfesorPorCorreo(correoProfesor);
+
         for (PreguntaRequest dto : lista) {
-            crearEntidad(dto);
+            crearEntidad(dto, profesor);
         }
 
         PreguntaBatchResponse response = new PreguntaBatchResponse();
@@ -55,13 +61,14 @@ public class PreguntaService {
         return response;
     }
 
-    public PreguntaResponse crear(PreguntaRequest dto) {
-        return toResponse(crearEntidad(dto));
+    public PreguntaResponse crear(PreguntaRequest dto, String correoProfesor) {
+        Profesor profesor = buscarProfesorPorCorreo(correoProfesor);
+        return toResponse(crearEntidad(dto, profesor));
     }
 
-    public PreguntaResponse actualizar(Integer preguntaId, PreguntaRequest dto) {
+    public PreguntaResponse actualizar(Integer preguntaId, PreguntaRequest dto, String correoProfesor) {
         Pregunta pregunta = buscarPregunta(preguntaId);
-        Profesor profesor = buscarProfesor(dto.getProfesorId());
+        Profesor profesor = buscarProfesorPorCorreo(correoProfesor);
         Curso curso = buscarCurso(dto.getCursoId());
 
         aplicarDatos(pregunta, dto, profesor, curso);
@@ -75,8 +82,7 @@ public class PreguntaService {
         return "PREGUNTA ELIMINADA";
     }
 
-    private Pregunta crearEntidad(PreguntaRequest dto) {
-        Profesor profesor = buscarProfesor(dto.getProfesorId());
+    private Pregunta crearEntidad(PreguntaRequest dto, Profesor profesor) {
         Curso curso = buscarCurso(dto.getCursoId());
         Pregunta pregunta = new Pregunta();
 
@@ -109,8 +115,12 @@ public class PreguntaService {
                 .orElseThrow(() -> new RuntimeException("Pregunta no encontrada"));
     }
 
-    private Profesor buscarProfesor(Integer profesorId) {
-        return profesorRepo.findById(profesorId)
+    private Profesor buscarProfesorPorCorreo(String correo) {
+        Integer usuarioId = usuarioRepo.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"))
+                .getUsuarioId();
+
+        return profesorRepo.findByUsuario_UsuarioId(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Profesor no encontrado"));
     }
 

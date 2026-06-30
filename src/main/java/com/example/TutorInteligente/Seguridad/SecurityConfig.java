@@ -48,7 +48,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/v1/cursos/**").authenticated()
                         .requestMatchers("/v1/cursos/**").hasRole("PROFESOR")
                         .requestMatchers("/v1/preguntas/**", "/v1/reportes/**").hasRole("PROFESOR")
-                        .requestMatchers("/v1/evaluaciones/**", "/v1/alumnos-cursos/**").hasRole("ALUMNO")
+                        .requestMatchers("/v1/evaluaciones/**").hasRole("ALUMNO")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)

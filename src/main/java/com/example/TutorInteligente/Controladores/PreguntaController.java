@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,18 +45,20 @@ public class PreguntaController {
 
     @PostMapping
     public ResponseEntity<?> registrarPregunta(
-            @Valid @RequestBody PreguntaRequest request
+            @Valid @RequestBody PreguntaRequest request,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(service.crear(request));
+        return ResponseEntity.ok(service.crear(request, authentication.getName()));
     }
 
     @PostMapping("/lote")
     public ResponseEntity<?> registrarPreguntas(
-            @RequestBody @NotEmpty List<@Valid PreguntaRequest> lista
+            @RequestBody @NotEmpty List<@Valid PreguntaRequest> lista,
+            Authentication authentication
     ) {
 
         PreguntaBatchResponse response =
-                service.registrarLista(lista);
+                service.registrarLista(lista, authentication.getName());
 
         if (response.getExitoso()) {
             return ResponseEntity.ok(response);
@@ -69,9 +72,10 @@ public class PreguntaController {
     @PutMapping("/{preguntaId}")
     public ResponseEntity<?> actualizarPregunta(
             @PathVariable Integer preguntaId,
-            @Valid @RequestBody PreguntaRequest request
+            @Valid @RequestBody PreguntaRequest request,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(service.actualizar(preguntaId, request));
+        return ResponseEntity.ok(service.actualizar(preguntaId, request, authentication.getName()));
     }
 
     @DeleteMapping("/{preguntaId}")

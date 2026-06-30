@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,16 +36,17 @@ public class EvaluacionController {
 
     @PostMapping
     public ResponseEntity<?> procesar(
-            @Valid @RequestBody EvaluacionRequest dto
+            @Valid @RequestBody EvaluacionRequest dto,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(service.procesarEvaluacion(dto));
+        return ResponseEntity.ok(service.procesarEvaluacion(dto, authentication.getName()));
     }
 
     @GetMapping("/progreso")
     public ResponseEntity<?> obtenerProgreso(
-            @RequestParam @NotNull(message = "El alumnoId es obligatorio") Integer alumnoId,
-            @RequestParam(required = false) Integer cursoId
+            @RequestParam(required = false) Integer cursoId,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(service.obtenerUltimoProgreso(alumnoId, cursoId));
+        return ResponseEntity.ok(service.obtenerUltimoProgreso(authentication.getName(), cursoId));
     }
 }

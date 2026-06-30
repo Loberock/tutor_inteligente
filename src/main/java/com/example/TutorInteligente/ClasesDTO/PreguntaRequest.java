@@ -10,9 +10,6 @@ import lombok.Setter;
 @Setter
 public class PreguntaRequest {
 
-    @NotNull(message = "El profesorId es obligatorio")
-    private Integer profesorId;
-
     @NotNull(message = "El cursoId es obligatorio")
     private Integer cursoId;
 
@@ -23,6 +20,7 @@ public class PreguntaRequest {
     private String grado;
 
     @NotBlank(message = "La dificultad es obligatoria")
+    @Pattern(regexp = "(?i)BASICO|INTERMEDIO|AVANZADO", message = "La dificultad debe ser BASICO, INTERMEDIO o AVANZADO")
     private String dificultad;
 
     @NotBlank(message = "La opcion A es obligatoria")
