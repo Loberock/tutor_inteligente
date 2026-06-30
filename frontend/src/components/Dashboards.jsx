@@ -2,10 +2,13 @@ import {
   BarChart3,
   BookOpen,
   ClipboardList,
+  Edit3,
   Plus,
   Search,
   Send,
   Sparkles,
+  Trash2,
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiRequest, difficultyLabels, roleLabels } from "../services/api";
@@ -63,6 +66,7 @@ function StudentDashboard({ session }) {
 function CoursesPanel({ token, refreshKey, onChanged }) {
   const [courses, setCourses] = useState([]);
   const [nombreCurso, setNombreCurso] = useState("");
+  const [editingCourse, setEditingCourse] = useState(null);
   const [status, setStatus] = useState({ type: "", message: "" });
 
   useEffect(() => {
@@ -71,16 +75,40 @@ function CoursesPanel({ token, refreshKey, onChanged }) {
       .catch((error) => setStatus({ type: "error", message: error.message }));
   }, [token, refreshKey]);
 
-  const createCourse = async (event) => {
+  const saveCourse = async (event) => {
     event.preventDefault();
     try {
-      await apiRequest("/v1/cursos", {
-        method: "POST",
+      const path = editingCourse ? `/v1/cursos/${editingCourse.cursoId}` : "/v1/cursos";
+      await apiRequest(path, {
+        method: editingCourse ? "PUT" : "POST",
         token,
         body: { nombreCurso },
       });
       setNombreCurso("");
-      setStatus({ type: "success", message: "Curso creado" });
+      setEditingCourse(null);
+      setStatus({ type: "success", message: editingCourse ? "Curso actualizado" : "Curso creado" });
+      onChanged();
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    }
+  };
+
+  const startCourseEdit = (course) => {
+    setEditingCourse(course);
+    setNombreCurso(course.nombreCurso);
+    setStatus({ type: "", message: "" });
+  };
+
+  const cancelCourseEdit = () => {
+    setEditingCourse(null);
+    setNombreCurso("");
+  };
+
+  const deleteCourse = async (course) => {
+    if (!window.confirm(`Eliminar el curso "${course.nombreCurso}"?`)) return;
+    try {
+      await apiRequest(`/v1/cursos/${course.cursoId}`, { method: "DELETE", token });
+      setStatus({ type: "success", message: "Curso eliminado" });
       onChanged();
     } catch (error) {
       setStatus({ type: "error", message: error.message });
@@ -89,17 +117,30 @@ function CoursesPanel({ token, refreshKey, onChanged }) {
 
   return (
     <Panel icon={<BookOpen size={19} />} title="Cursos" aside={`${courses.length} activos`} className="courses-panel">
-      <form className="inline-form" onSubmit={createCourse}>
-        <input value={nombreCurso} onChange={(event) => setNombreCurso(event.target.value)} placeholder="Nuevo curso" />
+      <form className="inline-form course-form" onSubmit={saveCourse}>
+        <input value={nombreCurso} onChange={(event) => setNombreCurso(event.target.value)} placeholder={editingCourse ? "Editar curso" : "Nuevo curso"} />
         <button className="icon-button filled" title="Crear curso">
-          <Plus size={18} />
+          {editingCourse ? <Edit3 size={18} /> : <Plus size={18} />}
         </button>
+        {editingCourse && (
+          <button type="button" className="icon-button" title="Cancelar edicion" onClick={cancelCourseEdit}>
+            <X size={18} />
+          </button>
+        )}
       </form>
       <div className="list compact">
         {courses.map((course) => (
           <div className="list-row" key={course.cursoId}>
             <span>{course.nombreCurso}</span>
-            <small>#{course.cursoId}</small>
+            <div className="row-actions">
+              <small>#{course.cursoId}</small>
+              <button className="ghost-button" title="Editar curso" onClick={() => startCourseEdit(course)}>
+                <Edit3 size={16} />
+              </button>
+              <button className="ghost-button danger" title="Eliminar curso" onClick={() => deleteCourse(course)}>
+                <Trash2 size={16} />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -111,6 +152,7 @@ function CoursesPanel({ token, refreshKey, onChanged }) {
 function QuestionsPanel({ session, refreshKey }) {
   const [courses, setCourses] = useState([]);
   const [questions, setQuestions] = useState([]);
+  const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [form, setForm] = useState({
     cursoId: "",
     contenidoPregunta: "",
@@ -131,7 +173,7 @@ function QuestionsPanel({ session, refreshKey }) {
       .catch(() => {});
   }, [session.token, refreshKey]);
 
-  const loadQuestions = async () => {
+  const loadQuestions = useCallback(async () => {
     try {
       const query = form.cursoId ? `?cursoId=${form.cursoId}&grado=${form.grado}&dificultad=${form.dificultad}` : "";
       setQuestions(await apiRequest(`/v1/preguntas${query}`, { token: session.token }));
@@ -139,13 +181,32 @@ function QuestionsPanel({ session, refreshKey }) {
     } catch (error) {
       setStatus({ type: "error", message: error.message });
     }
+  }, [form.cursoId, form.dificultad, form.grado, session.token]);
+
+  useEffect(() => {
+    loadQuestions();
+  }, [loadQuestions, refreshKey]);
+
+  const clearQuestionForm = () => {
+    setEditingQuestionId(null);
+    setForm({
+      ...form,
+      contenidoPregunta: "",
+      opcionA: "",
+      opcionB: "",
+      opcionC: "",
+      opcionD: "",
+      respuestaCorrecta: "A",
+      refuerzo: "",
+    });
   };
 
   const createQuestion = async (event) => {
     event.preventDefault();
     try {
-      await apiRequest("/v1/preguntas", {
-        method: "POST",
+      const path = editingQuestionId ? `/v1/preguntas/${editingQuestionId}` : "/v1/preguntas";
+      await apiRequest(path, {
+        method: editingQuestionId ? "PUT" : "POST",
         token: session.token,
         body: {
           ...form,
@@ -153,16 +214,39 @@ function QuestionsPanel({ session, refreshKey }) {
           cursoId: Number(form.cursoId),
         },
       });
-      setForm({
-        ...form,
-        contenidoPregunta: "",
-        opcionA: "",
-        opcionB: "",
-        opcionC: "",
-        opcionD: "",
-        refuerzo: "",
-      });
-      setStatus({ type: "success", message: "Pregunta creada" });
+      clearQuestionForm();
+      setStatus({ type: "success", message: editingQuestionId ? "Pregunta actualizada" : "Pregunta creada" });
+      loadQuestions();
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    }
+  };
+
+  const startQuestionEdit = (question) => {
+    setEditingQuestionId(question.preguntaId);
+    setForm({
+      cursoId: String(question.cursoId),
+      contenidoPregunta: question.contenidoPregunta,
+      grado: question.grado,
+      dificultad: question.dificultad,
+      opcionA: question.opcionA,
+      opcionB: question.opcionB,
+      opcionC: question.opcionC,
+      opcionD: question.opcionD,
+      respuestaCorrecta: question.respuestaCorrecta,
+      refuerzo: question.refuerzo || "",
+    });
+    setStatus({ type: "", message: "" });
+  };
+
+  const deleteQuestion = async (question) => {
+    if (!window.confirm("Eliminar esta pregunta del banco?")) return;
+    try {
+      await apiRequest(`/v1/preguntas/${question.preguntaId}`, { method: "DELETE", token: session.token });
+      if (editingQuestionId === question.preguntaId) {
+        clearQuestionForm();
+      }
+      setStatus({ type: "success", message: "Pregunta eliminada" });
       loadQuestions();
     } catch (error) {
       setStatus({ type: "error", message: error.message });
@@ -170,7 +254,7 @@ function QuestionsPanel({ session, refreshKey }) {
   };
 
   return (
-    <Panel icon={<ClipboardList size={19} />} title="Registrar pregunta" aside="Banco docente" className="questions-panel">
+    <Panel icon={<ClipboardList size={19} />} title={editingQuestionId ? "Editar pregunta" : "Registrar pregunta"} aside={`${questions.length} en banco`} className="questions-panel">
       <form className="stack-form dense" onSubmit={createQuestion}>
         <Field
           label="Pregunta"
@@ -224,22 +308,38 @@ function QuestionsPanel({ session, refreshKey }) {
           <Field label="Refuerzo" value={form.refuerzo} placeholder="Pista breve para el estudiante" onChange={(refuerzo) => setForm({ ...form, refuerzo })} />
         </div>
         <div className="button-row">
-          <SubmitButton icon={<Plus size={18} />} label="Guardar pregunta" />
+          <SubmitButton icon={editingQuestionId ? <Edit3 size={18} /> : <Plus size={18} />} label={editingQuestionId ? "Actualizar" : "Guardar pregunta"} />
           <button type="button" className="secondary-button" onClick={loadQuestions}>
             <Search size={18} />
             Ver banco
           </button>
+          {editingQuestionId && (
+            <button type="button" className="secondary-button" onClick={clearQuestionForm}>
+              <X size={18} />
+              Cancelar
+            </button>
+          )}
         </div>
       </form>
-      <div className="list">
+      <div className="question-bank">
         {questions.length === 0 ? (
           <EmptyState title="Sin preguntas cargadas" text="Usa los filtros y guarda nuevas preguntas para este curso." />
         ) : (
-          questions.slice(0, 5).map((question) => (
-            <div className="list-row question-row" key={question.preguntaId}>
-              <span>{question.contenidoPregunta}</span>
-              <small>{question.dificultad}</small>
-            </div>
+          questions.map((question) => (
+            <article className={editingQuestionId === question.preguntaId ? "question-card active" : "question-card"} key={question.preguntaId}>
+              <div>
+                <strong>{question.contenidoPregunta}</strong>
+                <span>{question.cursoNombre} · {question.grado}. secundaria · {difficultyLabels[question.dificultad] || question.dificultad}</span>
+              </div>
+              <div className="row-actions">
+                <button className="ghost-button" title="Editar pregunta" onClick={() => startQuestionEdit(question)}>
+                  <Edit3 size={16} />
+                </button>
+                <button className="ghost-button danger" title="Eliminar pregunta" onClick={() => deleteQuestion(question)}>
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </article>
           ))
         )}
       </div>
@@ -284,11 +384,11 @@ function ReportsPanel({ token }) {
       <div className="report-bars">
         {reportRows.slice(0, 4).map((report, index) => (
           <div className="report-bar" key={`${report.alumnoId}-${report.cursoId}-${index}`}>
-            <span>{report.curso || report.temaCritico || "Curso"}</span>
+            <span>{report.cursoNombre || report.temaCritico || "Curso"}</span>
             <div>
-              <i style={{ width: `${Math.max(Number(report.porcentajePromedio || report.rendimiento || 0), 8)}%` }} />
+              <i style={{ width: `${Math.max(Number(report.porcentaje || report.porcentajePromedio || report.rendimiento || 0), 8)}%` }} />
             </div>
-            <strong>{Number(report.porcentajePromedio || report.rendimiento || 0).toFixed(0)}%</strong>
+            <strong>{Number(report.porcentaje || report.porcentajePromedio || report.rendimiento || 0).toFixed(0)}%</strong>
           </div>
         ))}
       </div>
@@ -304,7 +404,7 @@ function ReportsPanel({ token }) {
           reportRows.map((report) => (
             <div className="table-row" key={`${report.alumnoId}-${report.cursoId}`}>
               <span>{report.nombreCompleto}</span>
-              <span>{Number(report.porcentajePromedio || report.rendimiento || 0).toFixed(0)}%</span>
+              <span>{Number(report.porcentaje || report.porcentajePromedio || report.rendimiento || 0).toFixed(0)}%</span>
               <span>{report.estado}</span>
             </div>
           ))

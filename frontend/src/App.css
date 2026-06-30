@@ -357,6 +357,10 @@ select:focus {
   gap: 8px;
 }
 
+.course-form {
+  grid-template-columns: 1fr 40px auto;
+}
+
 .button-row {
   flex-wrap: wrap;
   gap: 8px;
@@ -364,7 +368,8 @@ select:focus {
 
 .list,
 .exercise-list,
-.evaluation-flow {
+.evaluation-flow,
+.question-bank {
   display: grid;
   gap: 10px;
   margin-top: 12px;
@@ -386,6 +391,7 @@ select:focus {
 
 .list-row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
@@ -399,6 +405,73 @@ select:focus {
 .list-row small {
   color: var(--muted);
   font-weight: 700;
+}
+
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.ghost-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--teal);
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.ghost-button:hover {
+  border-color: var(--teal);
+  background: #edf8f4;
+}
+
+.ghost-button.danger {
+  color: #a83232;
+}
+
+.ghost-button.danger:hover {
+  border-color: #f3b4b4;
+  background: #fff1f1;
+}
+
+.question-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.question-card.active {
+  border-color: var(--teal);
+  background: #edf8f4;
+}
+
+.question-card strong,
+.question-card span {
+  display: block;
+}
+
+.question-card strong {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.question-card span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
 }
 
 .empty-state {
@@ -719,6 +792,8 @@ select:focus {
   .form-grid.two,
   .form-grid.three,
   .form-grid.four,
+  .course-form,
+  .question-card,
   .table-row,
   .report-bar,
   .result-box,
